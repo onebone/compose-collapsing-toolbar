@@ -39,6 +39,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,7 +47,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import me.onebone.toolbar.ui.theme.CollapsingToolbarTheme
@@ -87,9 +87,13 @@ fun TestScreen() {
 		)
 	)
 
+	var before = height
+
 	CollapsingToolbar(
-		collapsingToolbarState = state,
-		modifier = Modifier.height(with(LocalDensity.current) { height.toDp() })
+		collapsingToolbarState = state.apply {
+			println("feed: ${height - before}")
+			feedScroll(-1f)
+		},
 	) {
 		Box(
 			modifier = Modifier
@@ -107,6 +111,10 @@ fun TestScreen() {
 			color = Color.White
 		)
 	}
+
+	SideEffect {
+		before = height
+	}
 }
 
 @Composable
@@ -114,30 +122,41 @@ fun MainScreen() {
 	val state = rememberCollapsingToolbarState()
 
 	AppbarContainer(
-		modifier = Modifier.fillMaxWidth(),
+		modifier = Modifier
+			.fillMaxWidth(),
 		collapsingToolbarState = state
 	) {
 		CollapsingToolbar(
 			modifier = Modifier
-				.fillMaxWidth()
-				.height(40.dp)
 				.background(MaterialTheme.colors.primary),
 			collapsingToolbarState = state
 		) {
-			Text(
-				text = "Title",
-				// 접힌 상태에서 CenterStart, 펴진 상태에서 BottomCenter
-				modifier = Modifier.road(Alignment.CenterStart, Alignment.BottomCenter)
-			)
+			Box(
+				modifier = Modifier
+					// 접힌 상태에서 CenterStart, 펴진 상태에서 BottomCenter
+					.road(Alignment.CenterStart, Alignment.BottomEnd)
+					.padding(16.dp)
+			) {
+				Text(
+					text = "Title",
+					modifier = Modifier
+						.align(Alignment.Center),
+					color = Color.White
+				)
+			}
 
 			Image(
-				modifier = Modifier.parallax(),
+				modifier = Modifier
+					.parallax()
+					.padding(16.dp),
 				painter = painterResource(id = R.drawable.abc_vector_test),
 				contentDescription = null
 			)
 
 			Box(
-				modifier = Modifier.pin()
+				modifier = Modifier
+					.height(150.dp)
+					.pin()
 			)
 		}
 

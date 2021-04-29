@@ -52,14 +52,9 @@ fun AppbarContainer(
 	content: @Composable AppbarContainerScope.() -> Unit
 ) {
 	val offsetY = remember { mutableStateOf(0) }
-	val toolbarHeight = remember { mutableStateOf(0) }
 
 	val nestedScrollConnection = remember {
-		AppbarNestedScrollConnection(toolbarHeight, offsetY)
-	}
-
-	collapsingToolbarState.onVisibleHeightChange = CollapsingToolbarVisibleHeightChangeListener {
-		toolbarHeight.value = it
+		AppbarNestedScrollConnection(collapsingToolbarState, offsetY)
 	}
 
 	val scope = remember { AppbarContainerScopeImpl(nestedScrollConnection) }
@@ -77,25 +72,31 @@ interface AppbarContainerScope {
 }
 
 private class AppbarNestedScrollConnection(
-	private val toolbarHeight: State<Int>,
+	private val collapsingToolbarState: CollapsingToolbarState,
 	private val offsetY: MutableState<Int>
 ): NestedScrollConnection {
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val dy = available.y
 
-		val toolbar = toolbarHeight.value.toFloat()
+		val toolbar = collapsingToolbarState.height.toFloat()
 		val offset = offsetY.value.toFloat()
 
 		// -toolbarHeight <= offsetY + dy <= 0
-		val consume = if(dy < 0) { // scrolling down
-			// -toolbarHeight - offset <= dy
-			dy.coerceAtLeast(-toolbar - offset)
-		}else{
-			// dy <= -offsetY
-			dy.coerceAtMost(-offset)
-		}
+		val consume = if(dy < 0) {
+			val toolbarConsumption = collapsingToolbarState.feedScroll(dy)
+			val remaining = dy - toolbarConsumption
+			val offsetConsumption = remaining.coerceAtLeast(-toolbar - offset)
+			offsetY.value += offsetConsumption.roundToInt()
 
-		offsetY.value += consume.roundToInt()
+			toolbarConsumption + offsetConsumption
+		}else{
+			val offsetConsumption = dy.coerceAtMost(-offset)
+			offsetY.value += offsetConsumption.roundToInt()
+
+			val toolbarConsumption = collapsingToolbarState.feedScroll(dy - offsetConsumption)
+
+			offsetConsumption + toolbarConsumption
+		}
 
 		return Offset(0f, consume)
 	}
@@ -105,7 +106,9 @@ private class AppbarContainerScopeImpl(
 	private val nestedScrollConnection: NestedScrollConnection
 ): AppbarContainerScope {
 	override fun Modifier.appBarBody(): Modifier {
-		return this.then(AppBarBodyMarkerModifier).nestedScroll(nestedScrollConnection)
+		return this
+			.then(AppBarBodyMarkerModifier)
+			.nestedScroll(nestedScrollConnection)
 	}
 }
 
@@ -140,6 +143,9 @@ private class AppbarMeasurePolicy(
 
 			val data = measurable.parentData
 			if(data != AppBarBodyMarker) {
+				if(toolbarPlaceable != null)
+					throw IllegalStateException("There cannot exist multiple toolbars under single parent")
+
 				toolbarPlaceable = placeable
 			}
 
@@ -155,7 +161,7 @@ private class AppbarMeasurePolicy(
 					x = 0,
 					y = offsetY.value +
 							if(toolbarPlaceable == placeable) 0
-							else toolbarPlaceable?.height ?: 0
+							else (toolbarPlaceable?.height ?: 0)
 				)
 			}
 		}

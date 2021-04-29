@@ -24,9 +24,7 @@ package me.onebone.toolbar
 
 import androidx.annotation.FloatRange
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
@@ -35,22 +33,22 @@ import androidx.compose.ui.layout.MeasurePolicy
 import androidx.compose.ui.layout.MeasureResult
 import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.layout.ParentDataModifier
+import androidx.compose.ui.layout.Remeasurement
+import androidx.compose.ui.layout.RemeasurementModifier
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 fun interface CollapsingToolbarHeightChangeListener {
 	fun onChange(minHeight: Int, maxHeight: Int)
 }
 
-fun interface CollapsingToolbarVisibleHeightChangeListener {
-	fun onChange(height: Int)
-}
-
-data class CollapsingToolbarState(
+class CollapsingToolbarState(
 	/**
 	 * [minHeight] indicates the height when a toolbar is collapsed
 	 */
@@ -62,13 +60,46 @@ data class CollapsingToolbarState(
 	/**
 	 * [height] indicates current height
 	 */
-	var height: Int,
-	var onHeightChange: CollapsingToolbarHeightChangeListener? = null,
-	var onVisibleHeightChange: CollapsingToolbarVisibleHeightChangeListener? = null
+	height: Int,
+	val onChangeHeightListener: CollapsingToolbarHeightChangeListener?
 ) {
+	var height: Int = height
+		internal set
+
+	internal var hasInit = false
+
+	private var remeasurement: Remeasurement? = null
+
+	internal val remeasurementModifier: RemeasurementModifier = object: RemeasurementModifier {
+		override fun onRemeasurementAvailable(remeasurement: Remeasurement) {
+			this@CollapsingToolbarState.remeasurement = remeasurement
+		}
+	}
+
 	val progress: Float
 		@FloatRange(from = 0.0, to = 1.0)
 		get() = ((height - minHeight).toFloat() / (maxHeight - minHeight)).coerceIn(0f, 1f)
+
+	/**
+	 * @return consumed scroll value is returned
+	 */
+	fun feedScroll(value: Float): Float {
+		val consume = if(value < 0) {
+			max(minHeight.toFloat() - height, value)
+		}else{
+			min(maxHeight.toFloat() - height, value)
+		}
+
+		if(consume != 0f) {
+			height += consume.roundToInt()
+
+			if(abs(consume) > 0.5f) {
+				remeasurement?.forceRemeasure()
+			}
+		}
+
+		return consume
+	}
 }
 
 @Composable
@@ -82,19 +113,18 @@ fun CollapsingToolbar(
 	collapsingToolbarState: CollapsingToolbarState = rememberCollapsingToolbarState(),
 	content: @Composable CollapsingToolbarScope.() -> Unit
 ) {
-	val state = rememberUpdatedState(collapsingToolbarState)
-
-	val measurePolicy = remember { CollapsingToolbarMeasurePolicy(state) }
+	val measurePolicy = remember { CollapsingToolbarMeasurePolicy(collapsingToolbarState) }
 
 	Layout(
 		content = { CollapsingToolbarScopeInstance.content() },
 		measurePolicy = measurePolicy,
 		modifier = modifier
+			.then(collapsingToolbarState.remeasurementModifier)
 	)
 }
 
 private class CollapsingToolbarMeasurePolicy(
-	private val collapsingToolbarState: State<CollapsingToolbarState>
+	private val collapsingToolbarState: CollapsingToolbarState
 ): MeasurePolicy {
 	override fun MeasureScope.measure(
 		measurables: List<Measurable>,
@@ -112,6 +142,7 @@ private class CollapsingToolbarMeasurePolicy(
 			// measure with no height constraints
 			val placeable = measurable.measure(
 				constraints.copy(
+					minWidth = 0,
 					minHeight = 0,
 					maxHeight = Constraints.Infinity
 				)
@@ -121,8 +152,8 @@ private class CollapsingToolbarMeasurePolicy(
 			width = max(placeable.width, width)
 			height = max(placeable.height, height)
 
-			minHeight = min(minHeight, placeable.measuredHeight)
-			maxHeight = max(maxHeight, placeable.measuredHeight)
+			minHeight = min(minHeight, placeable.height)
+			maxHeight = max(maxHeight, placeable.height)
 
 			placeable
 		}
@@ -130,21 +161,21 @@ private class CollapsingToolbarMeasurePolicy(
 		width = width.coerceIn(constraints.minWidth, constraints.maxWidth)
 		height = height.coerceIn(constraints.minHeight, constraints.maxHeight)
 
-		collapsingToolbarState.value.also {
+		collapsingToolbarState.also {
 			if(it.minHeight != minHeight || it.maxHeight != maxHeight) {
-				it.onHeightChange?.onChange(minHeight, maxHeight)
+				it.onChangeHeightListener?.onChange(minHeight, maxHeight)
+
+				it.minHeight = minHeight
+				it.maxHeight = maxHeight
 			}
 
-			if(it.height != height) {
-				it.onVisibleHeightChange?.onChange(height)
+			if(!it.hasInit) {
+				it.hasInit = true
+				it.height = height
 			}
-
-			it.minHeight = minHeight
-			it.maxHeight = maxHeight
-			it.height = height
 		}
 
-		return layout(width, height) {
+		return layout(width, collapsingToolbarState.height) {
 			placeables.forEachIndexed { i, placeable ->
 				when(val strategy = placeStrategy[i]) {
 					is CollapsingToolbarRoadData -> {
@@ -153,20 +184,21 @@ private class CollapsingToolbarMeasurePolicy(
 
 						val collapsedOffset = collapsed.align(
 							size = IntSize(placeable.width, placeable.height),
-							space = IntSize(width, height),
+							space = IntSize(width, collapsingToolbarState.height),
 							// TODO LayoutDirection
 							layoutDirection = LayoutDirection.Ltr
 						)
 
 						val expandedOffset = expanded.align(
 							size = IntSize(placeable.width, placeable.height),
-							space = IntSize(width, height),
+							space = IntSize(width, collapsingToolbarState.height),
 							// TODO LayoutDirection
 							layoutDirection = LayoutDirection.Ltr
 						)
 
-						val progress = collapsingToolbarState.value.progress
+						val progress = collapsingToolbarState.progress
 						val offset = collapsedOffset + (expandedOffset - collapsedOffset) * progress
+
 						placeable.place(offset.x, offset.y)
 					}
 					// TODO parallax
