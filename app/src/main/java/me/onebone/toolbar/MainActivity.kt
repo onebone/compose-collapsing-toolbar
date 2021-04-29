@@ -25,6 +25,12 @@ package me.onebone.toolbar
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -33,14 +39,19 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import me.onebone.toolbar.ui.theme.CollapsingToolbarTheme
 
-class MainActivity : ComponentActivity() {
+class MainActivity: ComponentActivity() {
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		setContent {
@@ -57,8 +68,28 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun TestScreen() {
+	var minHeight by remember { mutableStateOf(0) }
+	var maxHeight by remember { mutableStateOf(0) }
+
+	val state = rememberCollapsingToolbarState { min, max ->
+		minHeight = min
+		maxHeight = max
+	}
+
+	// test animation
+	val transition = rememberInfiniteTransition()
+	val height by transition.animateFloat(
+		initialValue = minHeight.toFloat(),
+		targetValue = maxHeight.toFloat(),
+		animationSpec = infiniteRepeatable(
+			animation = tween(2000, easing = LinearEasing),
+			repeatMode = RepeatMode.Reverse
+		)
+	)
+
 	CollapsingToolbar(
-		modifier = Modifier.height(80.dp)
+		collapsingToolbarState = state,
+		modifier = Modifier.height(with(LocalDensity.current) { height.toDp() })
 	) {
 		Box(
 			modifier = Modifier
@@ -72,7 +103,7 @@ fun TestScreen() {
 			text = "Title",
 			modifier = Modifier
 				.height(30.dp)
-				.road(Alignment.CenterStart, Alignment.BottomEnd),
+				.road(Alignment.CenterStart, Alignment.BottomCenter),
 			color = Color.White
 		)
 	}
