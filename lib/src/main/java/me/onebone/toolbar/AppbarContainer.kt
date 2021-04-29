@@ -86,7 +86,7 @@ enum class ScrollStrategy {
 		): NestedScrollConnection =
 			EnterAlwaysCollapsedNestedScrollConnection(offsetY, toolbarState)
 	},
-	// FIXME ExitUntilCollapsed hides a body at the bottom in height of toolbar's height
+	// FIXME ExitUntilCollapsed hides bottom of a body by the height of toolbar
 	// this is because toolbar's offset and body's offset is grouped
 	/*ExitUntilCollapsed {
 		override fun create(
