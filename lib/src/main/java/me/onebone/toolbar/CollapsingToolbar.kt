@@ -176,8 +176,15 @@ private class CollapsingToolbarMeasurePolicy(
 		}
 
 		return layout(width, collapsingToolbarState.height) {
+			val progress = collapsingToolbarState.progress
+
 			placeables.forEachIndexed { i, placeable ->
-				when(val strategy = placeStrategy[i]) {
+				val strategy = placeStrategy[i]
+				if(strategy is CollapsingToolbarData) {
+					strategy.progressListener?.onProgressUpdate(progress)
+				}
+
+				when(strategy) {
 					is CollapsingToolbarRoadData -> {
 						val collapsed = strategy.whenCollapsed
 						val expanded = strategy.whenExpanded
@@ -196,13 +203,12 @@ private class CollapsingToolbarMeasurePolicy(
 							layoutDirection = LayoutDirection.Ltr
 						)
 
-						val progress = collapsingToolbarState.progress
 						val offset = collapsedOffset + (expandedOffset - collapsedOffset) * progress
 
 						placeable.place(offset.x, offset.y)
 					}
 					// TODO parallax
-					CollapsingToolbarParallaxData -> placeable.place(0, 0)
+					is CollapsingToolbarParallaxData -> placeable.place(0, 0)
 					else -> placeable.place(0, 0)
 				}
 			}
@@ -211,6 +217,8 @@ private class CollapsingToolbarMeasurePolicy(
 }
 
 interface CollapsingToolbarScope {
+	fun Modifier.progress(listener: ProgressListener): Modifier
+
 	fun Modifier.road(whenCollapsed: Alignment, whenExpanded: Alignment): Modifier
 
 	fun Modifier.parallax(): Modifier
@@ -219,6 +227,10 @@ interface CollapsingToolbarScope {
 }
 
 object CollapsingToolbarScopeInstance: CollapsingToolbarScope {
+	override fun Modifier.progress(listener: ProgressListener): Modifier {
+		return this.then(ProgressUpdateListenerModifier(listener))
+	}
+
 	override fun Modifier.road(whenCollapsed: Alignment, whenExpanded: Alignment): Modifier {
 		return this.then(RoadModifier(whenCollapsed, whenExpanded))
 	}
@@ -238,27 +250,54 @@ internal class RoadModifier(
 ): ParentDataModifier {
 	override fun Density.modifyParentData(parentData: Any?): Any {
 		return CollapsingToolbarRoadData(
-			this@RoadModifier.whenCollapsed, this@RoadModifier.whenExpanded
+			this@RoadModifier.whenCollapsed, this@RoadModifier.whenExpanded,
+			(parentData as? CollapsingToolbarData)?.progressListener
 		)
 	}
 }
 
 internal class ParallaxModifier: ParentDataModifier {
 	override fun Density.modifyParentData(parentData: Any?): Any {
-		return CollapsingToolbarParallaxData
+		return CollapsingToolbarParallaxData((parentData as? CollapsingToolbarData)?.progressListener)
 	}
 }
 
 internal class PinModifier: ParentDataModifier {
 	override fun Density.modifyParentData(parentData: Any?): Any {
-		return CollapsingToolbarPinData
+		return CollapsingToolbarPinData((parentData as? CollapsingToolbarData)?.progressListener)
 	}
 }
 
-internal data class CollapsingToolbarRoadData(
-	var whenCollapsed: Alignment,
-	var whenExpanded: Alignment
+internal class ProgressUpdateListenerModifier(
+	private val listener: ProgressListener
+): ParentDataModifier {
+	override fun Density.modifyParentData(parentData: Any?): Any {
+		return CollapsingToolbarProgressData(listener)
+	}
+}
+
+fun interface ProgressListener {
+	fun onProgressUpdate(value: Float)
+}
+
+internal sealed class CollapsingToolbarData(
+	var progressListener: ProgressListener?
 )
 
-internal object CollapsingToolbarPinData
-internal object CollapsingToolbarParallaxData
+internal class CollapsingToolbarProgressData(
+	progressListener: ProgressListener?
+): CollapsingToolbarData(progressListener)
+
+internal class CollapsingToolbarRoadData(
+	var whenCollapsed: Alignment,
+	var whenExpanded: Alignment,
+	progressListener: ProgressListener? = null
+): CollapsingToolbarData(progressListener)
+
+internal class CollapsingToolbarPinData(
+	progressListener: ProgressListener? = null
+): CollapsingToolbarData(progressListener)
+
+internal class CollapsingToolbarParallaxData(
+	progressListener: ProgressListener? = null
+): CollapsingToolbarData(progressListener)

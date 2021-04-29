@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import me.onebone.toolbar.ui.theme.CollapsingToolbarTheme
 
 class MainActivity: ComponentActivity() {
@@ -132,12 +133,18 @@ fun MainScreen() {
 				.background(MaterialTheme.colors.primary),
 			collapsingToolbarState = state
 		) {
+			var textSize by remember { mutableStateOf(25.sp) }
+
 			Text(
 				text = "Title",
 				modifier = Modifier
 					.road(Alignment.CenterStart, Alignment.BottomEnd)
+					.progress { value: Float ->
+						textSize = (18 + (30 - 18) * value).sp
+					}
 					.padding(60.dp, 16.dp, 16.dp, 16.dp),
-				color = Color.White
+				color = Color.White,
+				fontSize = textSize
 			)
 
 			Image(
