@@ -48,16 +48,16 @@ import kotlin.math.roundToInt
 fun AppbarContainer(
 	modifier: Modifier = Modifier,
 	/** The state of a connected collapsing toolbar */
+	scrollStrategy: ScrollStrategy,
 	collapsingToolbarState: CollapsingToolbarState,
 	content: @Composable AppbarContainerScope.() -> Unit
 ) {
 	val offsetY = remember { mutableStateOf(0) }
 
-	val nestedScrollConnection = remember {
-		AppbarNestedScrollConnection(collapsingToolbarState, offsetY)
+	val scope = remember {
+		AppbarContainerScopeImpl(scrollStrategy.create(offsetY, collapsingToolbarState))
 	}
 
-	val scope = remember { AppbarContainerScopeImpl(nestedScrollConnection) }
 	val measurePolicy = remember { AppbarMeasurePolicy(offsetY) }
 
 	Layout(
@@ -71,19 +71,49 @@ interface AppbarContainerScope {
 	fun Modifier.appBarBody(): Modifier
 }
 
-private class AppbarNestedScrollConnection(
-	private val collapsingToolbarState: CollapsingToolbarState,
-	private val offsetY: MutableState<Int>
+enum class ScrollStrategy {
+	EnterAlways {
+		override fun create(
+			offsetY: MutableState<Int>,
+			toolbarState: CollapsingToolbarState
+		): NestedScrollConnection =
+			EnterAlwaysNestedScrollConnection(offsetY, toolbarState)
+	},
+	EnterAlwaysCollapsed {
+		override fun create(
+			offsetY: MutableState<Int>,
+			toolbarState: CollapsingToolbarState
+		): NestedScrollConnection =
+			EnterAlwaysCollapsedNestedScrollConnection(offsetY, toolbarState)
+	},
+	// FIXME ExitUntilCollapsed hides a body at the bottom in height of toolbar's height
+	/*ExitUntilCollapsed {
+		override fun create(
+			offsetY: MutableState<Int>,
+			toolbarState: CollapsingToolbarState
+		): NestedScrollConnection =
+			ExitUntilCollapsedNestedScrollConnection(offsetY, toolbarState)
+	}*/;
+
+	internal abstract fun create(
+		offsetY: MutableState<Int>,
+		toolbarState: CollapsingToolbarState
+	): NestedScrollConnection
+}
+
+internal class EnterAlwaysNestedScrollConnection(
+	private val offsetY: MutableState<Int>,
+	private val toolbarState: CollapsingToolbarState
 ): NestedScrollConnection {
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val dy = available.y
 
-		val toolbar = collapsingToolbarState.height.toFloat()
+		val toolbar = toolbarState.height.toFloat()
 		val offset = offsetY.value.toFloat()
 
 		// -toolbarHeight <= offsetY + dy <= 0
 		val consume = if(dy < 0) {
-			val toolbarConsumption = collapsingToolbarState.feedScroll(dy)
+			val toolbarConsumption = toolbarState.feedScroll(dy)
 			val remaining = dy - toolbarConsumption
 			val offsetConsumption = remaining.coerceAtLeast(-toolbar - offset)
 			offsetY.value += offsetConsumption.roundToInt()
@@ -93,9 +123,85 @@ private class AppbarNestedScrollConnection(
 			val offsetConsumption = dy.coerceAtMost(-offset)
 			offsetY.value += offsetConsumption.roundToInt()
 
-			val toolbarConsumption = collapsingToolbarState.feedScroll(dy - offsetConsumption)
+			val toolbarConsumption = toolbarState.feedScroll(dy - offsetConsumption)
 
 			offsetConsumption + toolbarConsumption
+		}
+
+		return Offset(0f, consume)
+	}
+}
+
+internal class EnterAlwaysCollapsedNestedScrollConnection(
+	private val offsetY: MutableState<Int>,
+	private val toolbarState: CollapsingToolbarState
+): NestedScrollConnection {
+	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+		val dy = available.y
+
+		val consumed = if(dy > 0) { // expanding: offset -> body -> toolbar
+			val offsetConsumption = dy.coerceAtMost(-offsetY.value.toFloat())
+			offsetY.value += offsetConsumption.roundToInt()
+
+			offsetConsumption
+		}else{ // collapsing: toolbar -> offset -> body
+			val toolbarConsumption = toolbarState.feedScroll(dy)
+			val offsetConsumption = (dy - toolbarConsumption).coerceAtLeast(-toolbarState.height.toFloat() - offsetY.value)
+
+			offsetY.value += offsetConsumption.roundToInt()
+
+			toolbarConsumption + offsetConsumption
+		}
+
+		return Offset(0f, consumed)
+	}
+
+	override fun onPostScroll(
+		consumed: Offset,
+		available: Offset,
+		source: NestedScrollSource
+	): Offset {
+		val dy = available.y
+
+		return if(dy > 0) {
+			Offset(0f, toolbarState.feedScroll(dy))
+		}else{
+			Offset(0f, 0f)
+		}
+	}
+}
+
+internal class ExitUntilCollapsedNestedScrollConnection(
+	private val offsetY: MutableState<Int>,
+	private val toolbarState: CollapsingToolbarState
+): NestedScrollConnection {
+	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+		val dy = available.y
+		val consume = if(dy < 0) { // collapsing: toolbar -> body
+			toolbarState.feedScroll(dy)
+		}else{
+			0f
+		}
+
+		return Offset(0f, consume)
+	}
+
+	override fun onPostScroll(
+		consumed: Offset,
+		available: Offset,
+		source: NestedScrollSource
+	): Offset {
+		val dy = available.y
+
+		val consume = if(dy > 0) { // expanding: body -> toolbar
+			toolbarState.feedScroll(dy)
+		}else{
+			// we should consume scroll to offset to make sure we show all contents of body
+			/*val offsetConsumption = dy.coerceAtLeast(-toolbarState.height.toFloat() - offsetY.value)
+			offsetY.value += offsetConsumption.roundToInt()
+
+			offsetConsumption*/
+			0f
 		}
 
 		return Offset(0f, consume)

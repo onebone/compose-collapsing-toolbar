@@ -124,26 +124,21 @@ fun MainScreen() {
 	AppbarContainer(
 		modifier = Modifier
 			.fillMaxWidth(),
-		collapsingToolbarState = state
+		collapsingToolbarState = state,
+		scrollStrategy = ScrollStrategy.EnterAlwaysCollapsed
 	) {
 		CollapsingToolbar(
 			modifier = Modifier
 				.background(MaterialTheme.colors.primary),
 			collapsingToolbarState = state
 		) {
-			Box(
+			Text(
+				text = "Title",
 				modifier = Modifier
-					// 접힌 상태에서 CenterStart, 펴진 상태에서 BottomCenter
 					.road(Alignment.CenterStart, Alignment.BottomEnd)
-					.padding(16.dp)
-			) {
-				Text(
-					text = "Title",
-					modifier = Modifier
-						.align(Alignment.Center),
-					color = Color.White
-				)
-			}
+					.padding(60.dp, 16.dp, 16.dp, 16.dp),
+				color = Color.White
+			)
 
 			Image(
 				modifier = Modifier
