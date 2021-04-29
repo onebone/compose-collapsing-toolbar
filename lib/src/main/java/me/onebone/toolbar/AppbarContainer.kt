@@ -87,6 +87,7 @@ enum class ScrollStrategy {
 			EnterAlwaysCollapsedNestedScrollConnection(offsetY, toolbarState)
 	},
 	// FIXME ExitUntilCollapsed hides a body at the bottom in height of toolbar's height
+	// this is because toolbar's offset and body's offset is grouped
 	/*ExitUntilCollapsed {
 		override fun create(
 			offsetY: MutableState<Int>,
@@ -241,7 +242,7 @@ private class AppbarMeasurePolicy(
 
 		var toolbarPlaceable: Placeable? = null
 
-		val placeables = measurables.mapIndexed { i, measurable ->
+		val placeables = measurables.map { measurable ->
 			val placeable = measurable.measure(constraints)
 
 			width = max(width, placeable.width)
