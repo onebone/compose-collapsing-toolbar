@@ -58,8 +58,8 @@ class MainActivity: ComponentActivity() {
 			CollapsingToolbarTheme {
 				// A surface container using the 'background' color from the theme
 				Surface(color = MaterialTheme.colors.background) {
-					//MainScreen()
-					TestScreen()
+					MainScreen()
+					//TestScreen()
 				}
 			}
 		}
@@ -111,14 +111,18 @@ fun TestScreen() {
 
 @Composable
 fun MainScreen() {
+	val state = rememberCollapsingToolbarState()
+
 	AppbarContainer(
-		modifier = Modifier.fillMaxWidth()
+		modifier = Modifier.fillMaxWidth(),
+		collapsingToolbarState = state
 	) {
 		CollapsingToolbar(
 			modifier = Modifier
 				.fillMaxWidth()
 				.height(40.dp)
-				.background(MaterialTheme.colors.primary)
+				.background(MaterialTheme.colors.primary),
+			collapsingToolbarState = state
 		) {
 			Text(
 				text = "Title",

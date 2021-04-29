@@ -46,6 +46,10 @@ fun interface CollapsingToolbarHeightChangeListener {
 	fun onChange(minHeight: Int, maxHeight: Int)
 }
 
+fun interface CollapsingToolbarVisibleHeightChangeListener {
+	fun onChange(height: Int)
+}
+
 data class CollapsingToolbarState(
 	/**
 	 * [minHeight] indicates the height when a toolbar is collapsed
@@ -59,7 +63,8 @@ data class CollapsingToolbarState(
 	 * [height] indicates current height
 	 */
 	var height: Int,
-	var onHeightChange: CollapsingToolbarHeightChangeListener? = null
+	var onHeightChange: CollapsingToolbarHeightChangeListener? = null,
+	var onVisibleHeightChange: CollapsingToolbarVisibleHeightChangeListener? = null
 ) {
 	val progress: Float
 		@FloatRange(from = 0.0, to = 1.0)
@@ -128,6 +133,10 @@ private class CollapsingToolbarMeasurePolicy(
 		collapsingToolbarState.value.also {
 			if(it.minHeight != minHeight || it.maxHeight != maxHeight) {
 				it.onHeightChange?.onChange(minHeight, maxHeight)
+			}
+
+			if(it.height != height) {
+				it.onVisibleHeightChange?.onChange(height)
 			}
 
 			it.minHeight = minHeight
