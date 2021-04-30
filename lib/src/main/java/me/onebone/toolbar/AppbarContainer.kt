@@ -93,7 +93,7 @@ enum class ScrollStrategy {
 			offsetY: MutableState<Int>,
 			toolbarState: CollapsingToolbarState
 		): NestedScrollConnection =
-			ExitUntilCollapsedNestedScrollConnection(offsetY, toolbarState)
+			ExitUntilCollapsedNestedScrollConnection(toolbarState)
 	};
 
 	internal abstract fun create(
@@ -173,7 +173,6 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 }
 
 internal class ExitUntilCollapsedNestedScrollConnection(
-	private val offsetY: MutableState<Int>,
 	private val toolbarState: CollapsingToolbarState
 ): NestedScrollConnection {
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
