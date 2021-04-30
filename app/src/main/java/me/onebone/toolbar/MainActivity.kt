@@ -46,6 +46,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -126,7 +127,7 @@ fun MainScreen() {
 		modifier = Modifier
 			.fillMaxWidth(),
 		collapsingToolbarState = state,
-		scrollStrategy = ScrollStrategy.EnterAlwaysCollapsed
+		scrollStrategy = ScrollStrategy.ExitUntilCollapsed
 	) {
 		CollapsingToolbar(
 			modifier = Modifier
@@ -139,7 +140,7 @@ fun MainScreen() {
 				text = "Title",
 				modifier = Modifier
 					.road(Alignment.CenterStart, Alignment.BottomEnd)
-					.progress { value: Float ->
+					.progress { value ->
 						textSize = (18 + (30 - 18) * value).sp
 					}
 					.padding(60.dp, 16.dp, 16.dp, 16.dp),
@@ -173,39 +174,13 @@ fun MainScreen() {
 				)
 			}
 		}
-	}
-}
 
-/*@Composable
-fun MainScreen() {
-	CollapsingToolbar(
-		modifier = Modifier.fillMaxWidth()
-	) {
-		Box(modifier = Modifier
-			.fillMaxWidth()
-			.height(40.dp)
-			.background(MaterialTheme.colors.primary)
-		) {
-			Text(
-				text = "Title",
-				modifier = Modifier.align(Alignment.CenterStart),
-				color = Color.White
-			)
-		}
-
-		LazyColumn(
+		Box(
 			modifier = Modifier
-				.fillMaxWidth()
-				.markBody()
-		) {
-			items(100) {
-				Text(
-					text = "Item $it",
-					modifier = Modifier
-						.padding(16.dp)
-				)
-			}
-		}
+				.alpha(0.5f)
+				.background(MaterialTheme.colors.secondary)
+				.height(40.dp)
+				.appBarBody()
+		)
 	}
 }
-*/

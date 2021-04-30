@@ -58,7 +58,9 @@ fun AppbarContainer(
 		AppbarContainerScopeImpl(scrollStrategy.create(offsetY, collapsingToolbarState))
 	}
 
-	val measurePolicy = remember { AppbarMeasurePolicy(offsetY) }
+	val measurePolicy = remember {
+		AppbarMeasurePolicy(scrollStrategy, collapsingToolbarState, offsetY)
+	}
 
 	Layout(
 		content = { scope.content() },
@@ -86,15 +88,13 @@ enum class ScrollStrategy {
 		): NestedScrollConnection =
 			EnterAlwaysCollapsedNestedScrollConnection(offsetY, toolbarState)
 	},
-	// FIXME ExitUntilCollapsed hides bottom of a body by the height of toolbar
-	// this is because toolbar's offset and body's offset is grouped
-	/*ExitUntilCollapsed {
+	ExitUntilCollapsed {
 		override fun create(
 			offsetY: MutableState<Int>,
 			toolbarState: CollapsingToolbarState
 		): NestedScrollConnection =
 			ExitUntilCollapsedNestedScrollConnection(offsetY, toolbarState)
-	}*/;
+	};
 
 	internal abstract fun create(
 		offsetY: MutableState<Int>,
@@ -197,11 +197,6 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 		val consume = if(dy > 0) { // expanding: body -> toolbar
 			toolbarState.feedScroll(dy)
 		}else{
-			// we should consume scroll to offset to make sure we show all contents of body
-			/*val offsetConsumption = dy.coerceAtLeast(-toolbarState.height.toFloat() - offsetY.value)
-			offsetY.value += offsetConsumption.roundToInt()
-
-			offsetConsumption*/
 			0f
 		}
 
@@ -228,47 +223,66 @@ private object AppBarBodyMarkerModifier: ParentDataModifier {
 private object AppBarBodyMarker
 
 private class AppbarMeasurePolicy(
+	private val scrollStrategy: ScrollStrategy,
+	private val toolbarState: CollapsingToolbarState,
 	private val offsetY: State<Int>
 ): MeasurePolicy {
 	override fun MeasureScope.measure(
 		measurables: List<Measurable>,
 		constraints: Constraints
 	): MeasureResult {
-		if(measurables.size > 2)
-			throw IllegalStateException("AppbarContainer could hold at most 2 compose nodes")
-
 		var width = 0
 		var height = 0
 
 		var toolbarPlaceable: Placeable? = null
 
-		val placeables = measurables.map { measurable ->
-			val placeable = measurable.measure(constraints)
-
-			width = max(width, placeable.width)
-			height = max(height, placeable.height)
-
-			val data = measurable.parentData
+		val nonToolbars = measurables.filter {
+			val data = it.parentData
 			if(data != AppBarBodyMarker) {
 				if(toolbarPlaceable != null)
 					throw IllegalStateException("There cannot exist multiple toolbars under single parent")
 
+				val placeable = it.measure(constraints)
+				width = max(width, placeable.width)
+				height = max(height, placeable.height)
+
 				toolbarPlaceable = placeable
+
+				false
+			}else{
+				true
 			}
+		}
+
+		val placeables = nonToolbars.map { measurable ->
+			val childConstraints = if(scrollStrategy == ScrollStrategy.ExitUntilCollapsed) {
+				constraints.copy(
+					maxHeight = constraints.maxHeight - toolbarState.minHeight
+				)
+			}else{
+				constraints
+			}
+
+			val placeable = measurable.measure(childConstraints)
+
+			width = max(width, placeable.width)
+			height = max(height, placeable.height)
 
 			placeable
 		}
+
+		height += (toolbarPlaceable?.height ?: 0)
 
 		return layout(
 			width.coerceIn(constraints.minWidth, constraints.maxWidth),
 			height.coerceIn(constraints.minHeight, constraints.maxHeight)
 		) {
+			toolbarPlaceable?.place(x = 0, y = offsetY.value)
+
 			placeables.forEach { placeable ->
 				placeable.place(
 					x = 0,
-					y = offsetY.value +
-							if(toolbarPlaceable == placeable) 0
-							else (toolbarPlaceable?.height ?: 0)
+					y = offsetY.value + (toolbarPlaceable?.height ?: 0)
 				)
 			}
 		}
