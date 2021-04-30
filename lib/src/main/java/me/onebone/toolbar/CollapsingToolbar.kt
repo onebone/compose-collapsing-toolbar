@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.MeasurePolicy
@@ -119,6 +120,7 @@ fun CollapsingToolbar(
 		content = { CollapsingToolbarScopeInstance.content() },
 		measurePolicy = measurePolicy,
 		modifier = modifier
+			.clipToBounds()
 			.then(collapsingToolbarState.remeasurementModifier)
 	)
 }
@@ -133,7 +135,6 @@ private class CollapsingToolbarMeasurePolicy(
 		val placeStrategy = arrayOfNulls<Any>(measurables.size)
 
 		var width = 0
-		var height = 0
 
 		var minHeight = Int.MAX_VALUE
 		var maxHeight = 0
@@ -150,7 +151,6 @@ private class CollapsingToolbarMeasurePolicy(
 			placeStrategy[i] = measurable.parentData
 
 			width = max(placeable.width, width)
-			height = max(placeable.height, height)
 
 			minHeight = min(minHeight, placeable.height)
 			maxHeight = max(maxHeight, placeable.height)
@@ -159,7 +159,6 @@ private class CollapsingToolbarMeasurePolicy(
 		}
 
 		width = width.coerceIn(constraints.minWidth, constraints.maxWidth)
-		height = height.coerceIn(constraints.minHeight, constraints.maxHeight)
 
 		collapsingToolbarState.also {
 			if(it.minHeight != minHeight || it.maxHeight != maxHeight) {
@@ -171,11 +170,12 @@ private class CollapsingToolbarMeasurePolicy(
 
 			if(!it.hasInit) {
 				it.hasInit = true
-				it.height = height
+				it.height = maxHeight
 			}
 		}
 
-		return layout(width, collapsingToolbarState.height) {
+		val height = collapsingToolbarState.height
+		return layout(width, height) {
 			val progress = collapsingToolbarState.progress
 
 			placeables.forEachIndexed { i, placeable ->
@@ -191,14 +191,14 @@ private class CollapsingToolbarMeasurePolicy(
 
 						val collapsedOffset = collapsed.align(
 							size = IntSize(placeable.width, placeable.height),
-							space = IntSize(width, collapsingToolbarState.height),
+							space = IntSize(width, height),
 							// TODO LayoutDirection
 							layoutDirection = LayoutDirection.Ltr
 						)
 
 						val expandedOffset = expanded.align(
 							size = IntSize(placeable.width, placeable.height),
-							space = IntSize(width, collapsingToolbarState.height),
+							space = IntSize(width, height),
 							// TODO LayoutDirection
 							layoutDirection = LayoutDirection.Ltr
 						)
@@ -207,8 +207,11 @@ private class CollapsingToolbarMeasurePolicy(
 
 						placeable.place(offset.x, offset.y)
 					}
-					// TODO parallax
-					is CollapsingToolbarParallaxData -> placeable.place(0, 0)
+					is CollapsingToolbarParallaxData ->
+						placeable.place(
+							x = 0,
+							y = -((maxHeight - minHeight) * (1 - progress) * strategy.ratio).roundToInt()
+						)
 					else -> placeable.place(0, 0)
 				}
 			}
@@ -221,7 +224,7 @@ interface CollapsingToolbarScope {
 
 	fun Modifier.road(whenCollapsed: Alignment, whenExpanded: Alignment): Modifier
 
-	fun Modifier.parallax(): Modifier
+	fun Modifier.parallax(ratio: Float = 0.2f): Modifier
 
 	fun Modifier.pin(): Modifier
 }
@@ -235,8 +238,8 @@ object CollapsingToolbarScopeInstance: CollapsingToolbarScope {
 		return this.then(RoadModifier(whenCollapsed, whenExpanded))
 	}
 
-	override fun Modifier.parallax(): Modifier {
-		return this.then(ParallaxModifier())
+	override fun Modifier.parallax(ratio: Float): Modifier {
+		return this.then(ParallaxModifier(ratio))
 	}
 
 	override fun Modifier.pin(): Modifier {
@@ -256,9 +259,11 @@ internal class RoadModifier(
 	}
 }
 
-internal class ParallaxModifier: ParentDataModifier {
+internal class ParallaxModifier(
+	private val ratio: Float
+): ParentDataModifier {
 	override fun Density.modifyParentData(parentData: Any?): Any {
-		return CollapsingToolbarParallaxData((parentData as? CollapsingToolbarData)?.progressListener)
+		return CollapsingToolbarParallaxData(ratio, (parentData as? CollapsingToolbarData)?.progressListener)
 	}
 }
 
@@ -299,5 +304,6 @@ internal class CollapsingToolbarPinData(
 ): CollapsingToolbarData(progressListener)
 
 internal class CollapsingToolbarParallaxData(
+	var ratio: Float,
 	progressListener: ProgressListener? = null
 ): CollapsingToolbarData(progressListener)
