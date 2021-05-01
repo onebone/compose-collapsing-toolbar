@@ -1,0 +1,74 @@
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+
+ext['signing.keyId'] = ''
+ext['signing.password'] = ''
+ext['signing.secretKeyRingFile'] = ''
+
+var properties = new Properties()
+var file = project.rootProject.file('publish.properties')
+if(file.exists()) {
+	properties.load(new FileInputStream(file))
+
+	ext['signing.keyId'] = properties.getProperty('signing.keyId')
+	ext['signing.password'] = properties.getProperty('signing.password')
+	ext['signing.secretKeyRingFile'] = properties.getProperty('signing.secretKeyRingFile')
+
+	ext.ossrhUsername = properties.getProperty('ossrhUsername')
+	ext.ossrhPassword = properties.getProperty('ossrhPassword')
+}
+
+publishing {
+	publications {
+		release(MavenPublication) {
+			groupId = 'me.onebone'
+			artifactId = 'toolbar-compose'
+			version = android.defaultConfig.versionName
+
+			pom {
+				name = 'Collapsing Toolbar'
+				description = 'A simple implementation of collapsing toolbar for Jetpack Compose'
+				url = 'https://github.com/onebone/compose-collapsing-toolbar'
+
+				licenses {
+					license {
+						name = 'MIT License'
+						url = 'https://raw.githubusercontent.com/onebone/compose-collapsing-toolbar/master/LICENSE'
+					}
+				}
+
+				developers {
+					developer {
+						id = 'onebone'
+						name = 'onebone'
+						email = 'me@onebone.me'
+					}
+				}
+
+				scm {
+					connection = 'scm:git:git://github.com/onebone/compose-collapsing-toolbar.git'
+					developerConnection = 'scm:git:ssh://github.com/onebone/compose-collapsing-toolbar.git'
+					url = 'https://github.com/onebone/compose-collapsing-toolbar'
+				}
+			}
+		}
+	}
+
+	repositories {
+		maven {
+			name = 'mavenCentral'
+			url = version.endsWith('SNAPSHOT') ?
+					'https://s01.oss.sonatype.org/content/repositories/snapshots/' :
+					'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+
+			credentials {
+				username = ossrhUsername
+				password = ossrhPassword
+			}
+		}
+	}
+}
+
+signing {
+	sign publishing.publications
+}

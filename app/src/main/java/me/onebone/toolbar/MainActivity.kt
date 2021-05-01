@@ -150,7 +150,7 @@ fun MainScreen() {
 
 			Image(
 				modifier = Modifier
-					.parallax()
+					.pin()
 					.padding(16.dp),
 				painter = painterResource(id = R.drawable.abc_vector_test),
 				contentDescription = null
