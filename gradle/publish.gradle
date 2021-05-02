@@ -18,55 +18,72 @@ if(file.exists()) {
 	ext.ossrhPassword = properties.getProperty('ossrhPassword')
 }
 
-publishing {
-	publications {
-		release(MavenPublication) {
-			groupId = 'me.onebone'
-			artifactId = 'toolbar-compose'
-			version = android.defaultConfig.versionName
+afterEvaluate {
+	publishing {
+		publications {
+			release(MavenPublication) {
+				groupId = 'me.onebone'
+				artifactId = 'toolbar-compose'
+				version = android.defaultConfig.versionName
 
-			pom {
-				name = 'Collapsing Toolbar'
-				description = 'A simple implementation of collapsing toolbar for Jetpack Compose'
-				url = 'https://github.com/onebone/compose-collapsing-toolbar'
+				from components.release
 
-				licenses {
-					license {
-						name = 'MIT License'
-						url = 'https://raw.githubusercontent.com/onebone/compose-collapsing-toolbar/master/LICENSE'
-					}
-				}
+				artifact androidSourceSets
 
-				developers {
-					developer {
-						id = 'onebone'
-						name = 'onebone'
-						email = 'me@onebone.me'
-					}
-				}
-
-				scm {
-					connection = 'scm:git:git://github.com/onebone/compose-collapsing-toolbar.git'
-					developerConnection = 'scm:git:ssh://github.com/onebone/compose-collapsing-toolbar.git'
+				pom {
+					name = 'Collapsing Toolbar'
+					description = 'A simple implementation of collapsing toolbar for Jetpack Compose'
 					url = 'https://github.com/onebone/compose-collapsing-toolbar'
+
+					licenses {
+						license {
+							name = 'MIT License'
+							url = 'https://raw.githubusercontent.com/onebone/compose-collapsing-toolbar/master/LICENSE'
+						}
+					}
+
+					developers {
+						developer {
+							id = 'onebone'
+							name = 'onebone'
+							email = 'me@onebone.me'
+						}
+					}
+
+					scm {
+						connection = 'scm:git:git://github.com/onebone/compose-collapsing-toolbar.git'
+						developerConnection = 'scm:git:ssh://github.com/onebone/compose-collapsing-toolbar.git'
+						url = 'https://github.com/onebone/compose-collapsing-toolbar'
+					}
+				}
+			}
+		}
+
+		repositories {
+			maven {
+				name = 'mavenCentral'
+				url = version.endsWith('SNAPSHOT') ?
+						'https://s01.oss.sonatype.org/content/repositories/snapshots/' :
+						'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+
+				credentials {
+					username = ossrhUsername
+					password = ossrhPassword
 				}
 			}
 		}
 	}
+}
 
-	repositories {
-		maven {
-			name = 'mavenCentral'
-			url = version.endsWith('SNAPSHOT') ?
-					'https://s01.oss.sonatype.org/content/repositories/snapshots/' :
-					'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+task androidSourceSets(type: Jar) {
+	archiveClassifier.set('sources')
 
-			credentials {
-				username = ossrhUsername
-				password = ossrhPassword
-			}
-		}
-	}
+	from android.sourceSets.main.java.srcDirs
+	from android.sourceSets.main.kotlin.srcDirs
+}
+
+artifacts {
+	archives androidSourceSets
 }
 
 signing {
