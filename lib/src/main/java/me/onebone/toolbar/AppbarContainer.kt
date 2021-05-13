@@ -241,7 +241,9 @@ private class AppbarMeasurePolicy(
 				if(toolbarPlaceable != null)
 					throw IllegalStateException("There cannot exist multiple toolbars under single parent")
 
-				val placeable = it.measure(constraints)
+				val placeable = it.measure(constraints.copy(
+					minHeight = 0
+				))
 				width = max(width, placeable.width)
 				height = max(height, placeable.height)
 
@@ -256,10 +258,15 @@ private class AppbarMeasurePolicy(
 		val placeables = nonToolbars.map { measurable ->
 			val childConstraints = if(scrollStrategy == ScrollStrategy.ExitUntilCollapsed) {
 				constraints.copy(
-					maxHeight = constraints.maxHeight - toolbarState.minHeight
+					minWidth = 0,
+					minHeight = 0,
+					maxHeight = max(0, constraints.maxHeight - toolbarState.minHeight)
 				)
 			}else{
-				constraints
+				constraints.copy(
+					minWidth = 0,
+					minHeight = 0
+				)
 			}
 
 			val placeable = measurable.measure(childConstraints)

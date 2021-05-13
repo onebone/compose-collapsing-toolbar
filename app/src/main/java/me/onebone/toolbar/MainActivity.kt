@@ -165,6 +165,7 @@ fun MainScreen() {
 
 		LazyColumn(
 			modifier = Modifier
+				.fillMaxWidth()
 				.appBarBody()
 		) {
 			items(100) {
@@ -177,6 +178,7 @@ fun MainScreen() {
 
 		Box(
 			modifier = Modifier
+				.fillMaxWidth()
 				.alpha(0.5f)
 				.background(MaterialTheme.colors.secondary)
 				.height(40.dp)
