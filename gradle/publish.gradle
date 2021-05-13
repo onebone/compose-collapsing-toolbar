@@ -4,6 +4,8 @@ apply plugin: 'signing'
 ext['signing.keyId'] = ''
 ext['signing.password'] = ''
 ext['signing.secretKeyRingFile'] = ''
+ext['ossrhUsername'] = ''
+ext['ossrhPassword'] = ''
 
 var properties = new Properties()
 var file = project.rootProject.file('publish.properties')
