@@ -114,7 +114,9 @@ fun CollapsingToolbar(
 	collapsingToolbarState: CollapsingToolbarState = rememberCollapsingToolbarState(),
 	content: @Composable CollapsingToolbarScope.() -> Unit
 ) {
-	val measurePolicy = remember { CollapsingToolbarMeasurePolicy(collapsingToolbarState) }
+	val measurePolicy = remember(collapsingToolbarState) {
+		CollapsingToolbarMeasurePolicy(collapsingToolbarState)
+	}
 
 	Layout(
 		content = { CollapsingToolbarScopeInstance.content() },
