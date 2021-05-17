@@ -53,11 +53,11 @@ class CollapsingToolbarState(
 	/**
 	 * [minHeight] indicates the height when a toolbar is collapsed
 	 */
-	var minHeight: Int,
+	minHeight: Int,
 	/**
 	 * [maxHeight] indicates the height when a toolbar is expanded
 	 */
-	var maxHeight: Int,
+	maxHeight: Int,
 	/**
 	 * [height] indicates current height
 	 */
@@ -65,6 +65,12 @@ class CollapsingToolbarState(
 	val onChangeHeightListener: CollapsingToolbarHeightChangeListener?
 ) {
 	var height: Int = height
+		internal set
+
+	var minHeight: Int = minHeight
+		internal set
+
+	var maxHeight: Int = maxHeight
 		internal set
 
 	internal var hasInit = false
@@ -105,7 +111,7 @@ class CollapsingToolbarState(
 
 @Composable
 fun rememberCollapsingToolbarState(listener: CollapsingToolbarHeightChangeListener? = null): CollapsingToolbarState {
-	return remember { CollapsingToolbarState(0, 0, 0, listener) }
+	return remember(listener) { CollapsingToolbarState(0, 0, 0, listener) }
 }
 
 @Composable
