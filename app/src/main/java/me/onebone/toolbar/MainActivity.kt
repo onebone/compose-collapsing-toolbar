@@ -48,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,61 +62,9 @@ class MainActivity: ComponentActivity() {
 				// A surface container using the 'background' color from the theme
 				Surface(color = MaterialTheme.colors.background) {
 					MainScreen()
-					//TestScreen()
 				}
 			}
 		}
-	}
-}
-
-@Composable
-fun TestScreen() {
-	var minHeight by remember { mutableStateOf(0) }
-	var maxHeight by remember { mutableStateOf(0) }
-
-	val state = rememberCollapsingToolbarState { min, max ->
-		minHeight = min
-		maxHeight = max
-	}
-
-	// test animation
-	val transition = rememberInfiniteTransition()
-	val height by transition.animateFloat(
-		initialValue = minHeight.toFloat(),
-		targetValue = maxHeight.toFloat(),
-		animationSpec = infiniteRepeatable(
-			animation = tween(2000, easing = LinearEasing),
-			repeatMode = RepeatMode.Reverse
-		)
-	)
-
-	var before = height
-
-	CollapsingToolbar(
-		collapsingToolbarState = state.apply {
-			println("feed: ${height - before}")
-			feedScroll(-1f)
-		},
-	) {
-		Box(
-			modifier = Modifier
-				.fillMaxWidth()
-				.height(80.dp)
-				.background(MaterialTheme.colors.primary)
-				.pin()
-		)
-
-		Text(
-			text = "Title",
-			modifier = Modifier
-				.height(30.dp)
-				.road(Alignment.CenterStart, Alignment.BottomCenter),
-			color = Color.White
-		)
-	}
-
-	SideEffect {
-		before = height
 	}
 }
 
@@ -134,15 +83,13 @@ fun MainScreen() {
 				.background(MaterialTheme.colors.primary),
 			collapsingToolbarState = state
 		) {
-			var textSize by remember { mutableStateOf(25.sp) }
+			// [textSize] is in range of 18..30 depending on [state.progress]
+			val textSize = (18 + (30 - 18) * state.progress).sp
 
 			Text(
 				text = "Title",
 				modifier = Modifier
 					.road(Alignment.CenterStart, Alignment.BottomEnd)
-					.progress { value ->
-						textSize = (18 + (30 - 18) * value).sp
-					}
 					.padding(60.dp, 16.dp, 16.dp, 16.dp),
 				color = Color.White,
 				fontSize = textSize

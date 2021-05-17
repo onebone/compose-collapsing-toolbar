@@ -24,7 +24,11 @@ package me.onebone.toolbar
 
 import androidx.annotation.FloatRange
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -40,40 +44,53 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
-import kotlin.math.abs
+import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-fun interface CollapsingToolbarHeightChangeListener {
-	fun onChange(minHeight: Int, maxHeight: Int)
-}
-
+@Stable
 class CollapsingToolbarState(
-	/**
-	 * [minHeight] indicates the height when a toolbar is collapsed
-	 */
-	minHeight: Int,
-	/**
-	 * [maxHeight] indicates the height when a toolbar is expanded
-	 */
-	maxHeight: Int,
-	/**
-	 * [height] indicates current height
-	 */
-	height: Int,
-	val onChangeHeightListener: CollapsingToolbarHeightChangeListener?
+	initial: Int = Int.MAX_VALUE
 ) {
-	var height: Int = height
-		internal set
+	/**
+	 * [height] indicates current height of the toolbar.
+	 */
+	var height: Int by mutableStateOf(initial)
+		private set
 
-	var minHeight: Int = minHeight
-		internal set
+	/**
+	 * [minHeight] indicates the minimum height of the collapsing toolbar. The toolbar
+	 * may collapse its height to [minHeight] but not smaller. This size is determined by
+	 * the smallest child.
+	 */
+	var minHeight: Int
+		get() = minHeightState
+		internal set(value) {
+			minHeightState = value
 
-	var maxHeight: Int = maxHeight
-		internal set
+			if(height < value) {
+				height = value
+			}
+		}
 
-	internal var hasInit = false
+	/**
+	 * [maxHeight] indicates the maximum height of the collapsing toolbar. The toolbar
+	 * may expand its height to [maxHeight] but not larger. This size is determined by
+	 * the largest child.
+	 */
+	var maxHeight: Int
+		get() = maxHeightState
+		internal set(value) {
+			maxHeightState = value
+
+			if(value < height) {
+				height = value
+			}
+		}
+
+	private var maxHeightState by mutableStateOf(Int.MAX_VALUE)
+	private var minHeightState by mutableStateOf(0)
 
 	private var remeasurement: Remeasurement? = null
 
@@ -100,7 +117,7 @@ class CollapsingToolbarState(
 		if(consume != 0f) {
 			height += consume.roundToInt()
 
-			if(abs(consume) > 0.5f) {
+			if(consume.absoluteValue > 0.5f) {
 				remeasurement?.forceRemeasure()
 			}
 		}
@@ -110,8 +127,14 @@ class CollapsingToolbarState(
 }
 
 @Composable
-fun rememberCollapsingToolbarState(listener: CollapsingToolbarHeightChangeListener? = null): CollapsingToolbarState {
-	return remember(listener) { CollapsingToolbarState(0, 0, 0, listener) }
+fun rememberCollapsingToolbarState(
+	initial: Int = Int.MAX_VALUE
+): CollapsingToolbarState {
+	return remember {
+		CollapsingToolbarState(
+			initial = initial
+		)
+	}
 }
 
 @Composable
@@ -169,17 +192,8 @@ private class CollapsingToolbarMeasurePolicy(
 		width = width.coerceIn(constraints.minWidth, constraints.maxWidth)
 
 		collapsingToolbarState.also {
-			if(it.minHeight != minHeight || it.maxHeight != maxHeight) {
-				it.onChangeHeightListener?.onChange(minHeight, maxHeight)
-
-				it.minHeight = minHeight
-				it.maxHeight = maxHeight
-			}
-
-			if(!it.hasInit) {
-				it.hasInit = true
-				it.height = maxHeight
-			}
+			it.minHeight = minHeight
+			it.maxHeight = maxHeight
 		}
 
 		val height = collapsingToolbarState.height

@@ -1,4 +1,4 @@
-# android-collapsing-toolbar
+# compose-collapsing-toolbar
 A simple implementation of collapsing toolbar for Jetpack Compose
 
 ## Example
@@ -16,15 +16,12 @@ AppbarContainer(
 			.background(MaterialTheme.colors.primary),
 		collapsingToolbarState = state
 	) {
-		var textSize by remember { mutableStateOf(25.sp) }
+		val textSize = (18 + (30 - 18) * state.progress).sp
 
 		Text(
 			text = "Title",
 			modifier = Modifier
 				.road(Alignment.CenterStart, Alignment.BottomEnd)
-				.progress { value ->
-					textSize = (18 + (30 - 18) * value).sp
-				}
 				.padding(60.dp, 16.dp, 16.dp, 16.dp),
 			color = Color.White,
 			fontSize = textSize
@@ -68,7 +65,7 @@ AppbarContainer(
 	modifier = Modifier
 		.fillMaxWidth(),
 	collapsingToolbarState = state,
-	scrollStrategy = ScrollStrategy.EnterAlways
+	scrollStrategy = ScrollStrategy.EnterAlways // <---
 ) {
 	CollapsingToolbar(
 		modifier = Modifier
@@ -95,7 +92,7 @@ AppbarContainer(
 	modifier = Modifier
 		.fillMaxWidth(),
 	collapsingToolbarState = state,
-	scrollStrategy = ScrollStrategy.EnterAlwaysCollapsed
+	scrollStrategy = ScrollStrategy.EnterAlwaysCollapsed // <---
 ) {
 	CollapsingToolbar(
 		modifier = Modifier
@@ -122,7 +119,7 @@ AppbarContainer(
 	modifier = Modifier
 		.fillMaxWidth(),
 	collapsingToolbarState = state,
-	scrollStrategy = ScrollStrategy.ExitUntilCollapsed
+	scrollStrategy = ScrollStrategy.ExitUntilCollapsed // <---
 ) {
 	CollapsingToolbar(
 		modifier = Modifier
