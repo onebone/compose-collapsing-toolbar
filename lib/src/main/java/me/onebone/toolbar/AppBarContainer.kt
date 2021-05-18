@@ -44,8 +44,30 @@ import androidx.compose.ui.unit.Density
 import kotlin.math.max
 import kotlin.math.roundToInt
 
+@Deprecated(
+	"Use AppBarContainer for naming consistency",
+	replaceWith = ReplaceWith(
+		"AppBarContainer(modifier, scrollStrategy, collapsingToolbarState, content)",
+		"me.onebone.toolbar"
+	)
+)
 @Composable
 fun AppbarContainer(
+	modifier: Modifier = Modifier,
+	scrollStrategy: ScrollStrategy,
+	collapsingToolbarState: CollapsingToolbarState,
+	content: @Composable AppbarContainerScope.() -> Unit
+) {
+	AppBarContainer(
+		modifier = modifier,
+		scrollStrategy = scrollStrategy,
+		collapsingToolbarState = collapsingToolbarState,
+		content = content
+	)
+}
+
+@Composable
+fun AppBarContainer(
 	modifier: Modifier = Modifier,
 	/** The state of a connected collapsing toolbar */
 	scrollStrategy: ScrollStrategy,

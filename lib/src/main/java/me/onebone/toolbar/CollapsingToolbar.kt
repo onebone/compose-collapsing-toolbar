@@ -140,7 +140,7 @@ fun rememberCollapsingToolbarState(
 @Composable
 fun CollapsingToolbar(
 	modifier: Modifier = Modifier,
-	collapsingToolbarState: CollapsingToolbarState = rememberCollapsingToolbarState(),
+	collapsingToolbarState: CollapsingToolbarState,
 	content: @Composable CollapsingToolbarScope.() -> Unit
 ) {
 	val measurePolicy = remember(collapsingToolbarState) {
