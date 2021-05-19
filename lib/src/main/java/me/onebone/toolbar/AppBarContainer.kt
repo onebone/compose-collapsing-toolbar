@@ -76,12 +76,9 @@ fun AppBarContainer(
 ) {
 	val offsetY = remember { mutableStateOf(0) }
 
-	val scope = remember {
-		AppbarContainerScopeImpl(scrollStrategy.create(offsetY, collapsingToolbarState))
-	}
-
-	val measurePolicy = remember {
-		AppbarMeasurePolicy(scrollStrategy, collapsingToolbarState, offsetY)
+	val (scope, measurePolicy) = remember(scrollStrategy, collapsingToolbarState) {
+		AppbarContainerScopeImpl(scrollStrategy.create(offsetY, collapsingToolbarState)) to
+				AppbarMeasurePolicy(scrollStrategy, collapsingToolbarState, offsetY)
 	}
 
 	Layout(
