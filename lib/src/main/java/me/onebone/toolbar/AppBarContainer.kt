@@ -69,8 +69,8 @@ fun AppbarContainer(
 @Composable
 fun AppBarContainer(
 	modifier: Modifier = Modifier,
-	/** The state of a connected collapsing toolbar */
 	scrollStrategy: ScrollStrategy,
+	/** The state of a connected collapsing toolbar */
 	collapsingToolbarState: CollapsingToolbarState,
 	content: @Composable AppbarContainerScope.() -> Unit
 ) {
