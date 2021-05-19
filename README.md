@@ -1,11 +1,16 @@
 # compose-collapsing-toolbar
 A simple implementation of collapsing toolbar for Jetpack Compose
 
+## Installation
+```gradle
+implementation "me.onebone:toolbar-compose:2.0.0"
+```
+
 ## Example
 ```kotlin
 val state = rememberCollapsingToolbarState()
 
-AppbarContainer(
+AppBarContainer(
 	modifier = Modifier
 		.fillMaxWidth(),
 	collapsingToolbarState = state,
@@ -61,7 +66,7 @@ AppbarContainer(
 ![EnterAlways](img/enter-always.gif)
 
 ```kotlin
-AppbarContainer(
+AppBarContainer(
 	modifier = Modifier
 		.fillMaxWidth(),
 	collapsingToolbarState = state,
@@ -88,7 +93,7 @@ AppbarContainer(
 ![EnterAlwaysCollapsed](img/enter-always-collapsed.gif)
 
 ```kotlin
-AppbarContainer(
+AppBarContainer(
 	modifier = Modifier
 		.fillMaxWidth(),
 	collapsingToolbarState = state,
@@ -115,7 +120,7 @@ AppbarContainer(
 ![ExitUntilCollapsed](img/exit-until-collapsed.gif)
 
 ```kotlin
-AppbarContainer(
+AppBarContainer(
 	modifier = Modifier
 		.fillMaxWidth(),
 	collapsingToolbarState = state,
