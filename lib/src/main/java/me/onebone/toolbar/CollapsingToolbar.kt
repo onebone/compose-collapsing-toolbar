@@ -92,17 +92,11 @@ class CollapsingToolbarState(
 	private var maxHeightState by mutableStateOf(Int.MAX_VALUE)
 	private var minHeightState by mutableStateOf(0)
 
-	private var remeasurement: Remeasurement? = null
-
-	internal val remeasurementModifier: RemeasurementModifier = object: RemeasurementModifier {
-		override fun onRemeasurementAvailable(remeasurement: Remeasurement) {
-			this@CollapsingToolbarState.remeasurement = remeasurement
-		}
-	}
-
 	val progress: Float
 		@FloatRange(from = 0.0, to = 1.0)
 		get() = ((height - minHeight).toFloat() / (maxHeight - minHeight)).coerceIn(0f, 1f)
+
+	private var deferredConsumption: Float = 0f
 
 	/**
 	 * @return consumed scroll value is returned
@@ -114,15 +108,15 @@ class CollapsingToolbarState(
 			min(maxHeight.toFloat() - height, value)
 		}
 
-		if(consume != 0f) {
-			height += consume.roundToInt()
+		val current = consume + deferredConsumption
+		val currentInt = current.toInt()
 
-			if(consume.absoluteValue > 0.5f) {
-				remeasurement?.forceRemeasure()
-			}
+		if(current.absoluteValue > 0) {
+			height += currentInt
+			deferredConsumption = current - currentInt
 		}
 
-		return consume
+		return current
 	}
 }
 
@@ -152,7 +146,6 @@ fun CollapsingToolbar(
 		measurePolicy = measurePolicy,
 		modifier = modifier
 			.clipToBounds()
-			.then(collapsingToolbarState.remeasurementModifier)
 	)
 }
 
