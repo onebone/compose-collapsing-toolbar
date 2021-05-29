@@ -2,12 +2,12 @@
 A simple implementation of [CollapsingToolbarLayout](https://developer.android.com/reference/com/google/android/material/appbar/CollapsingToolbarLayout) for Jetpack Compose
 
 ## Installation
-You should add `mavenCentral()` repository before installation. Then add the following line to the `dependencies` block in your gradle:
+You should add `mavenCentral()` repository before installation. Then add the following line to the `dependencies` block in your app level build.gradle:
 
 ```gradle
 implementation "me.onebone:toolbar-compose:2.0.1"
 ```
-OR
+or build.gradle.kts:
 ```kotlin
 implementation("me.onebone:toolbar-compose:2.0.1")
 ```
@@ -37,7 +37,7 @@ AppBarContainer(
 ```
 
 ### Adding child to CollapsingToolbar
-Similar to [CollapsingToolbarLayout](https://developer.android.com/reference/com/google/android/material/appbar/CollapsingToolbarLayout), you may add children to the `CollapsingToolbar`. The toolbar will collapse until it **gets as small as the smallest child**, and will **get as large as the largest child**.
+Similar to [CollapsingToolbarLayout](https://developer.android.com/reference/com/google/android/material/appbar/CollapsingToolbarLayout), you may add children to the `CollapsingToolbar`. The toolbar will collapse until it **gets as small as the smallest child**, and will **expand as large as the largest child**.
 
 ### Adding child to AppBarContainer
 The AppBarContainer may consist of _at most one CollapsingToolbar_ and _unlimited number of body composable_. Each body composable should be marked with **appBarBody() modifier**:
@@ -92,14 +92,14 @@ The `road()` modifier allows you to place a child relatively to the toolbar. It 
 This can be used to display a title text on the toolbar which is moving as the scroll is fed.
 ```kotlin
 CollapsingToolbar(/* ... */) {
-	Text(
+    Text(
         text = "Title",
         modifier = Modifier
             .road(
                 whenCollapsed = Alignment.CenterStart,
                 whenExpanded = Alignment.BottomEnd
             )
-	)
+    )
 }
 ```
 The above code orders the title `Text` to be placed at the _CenterStart_ position when the toolbar is collapsed and _BottomEnd_ position when it is expanded. 
