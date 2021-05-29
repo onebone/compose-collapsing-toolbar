@@ -261,6 +261,7 @@ private class AppbarMeasurePolicy(
 					throw IllegalStateException("There cannot exist multiple toolbars under single parent")
 
 				val placeable = it.measure(constraints.copy(
+					minWidth = 0,
 					minHeight = 0
 				))
 				width = max(width, placeable.width)

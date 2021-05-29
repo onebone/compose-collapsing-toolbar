@@ -93,6 +93,7 @@ fun MainScreen() {
 
 			Box(
 				modifier = Modifier
+					.fillMaxWidth()
 					.height(150.dp)
 					.pin()
 			)
