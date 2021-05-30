@@ -66,6 +66,13 @@ fun AppbarContainer(
 	)
 }
 
+@Deprecated(
+	"AppBarContainer is replaced with CollapsingToolbarScaffold",
+	replaceWith = ReplaceWith(
+		"CollapsingToolbarScaffold",
+		"me.onebone.toolbar"
+	)
+)
 @Composable
 fun AppBarContainer(
 	modifier: Modifier = Modifier,
@@ -222,7 +229,7 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 	}
 }
 
-private class AppbarContainerScopeImpl(
+internal class AppbarContainerScopeImpl(
 	private val nestedScrollConnection: NestedScrollConnection
 ): AppbarContainerScope {
 	override fun Modifier.appBarBody(): Modifier {

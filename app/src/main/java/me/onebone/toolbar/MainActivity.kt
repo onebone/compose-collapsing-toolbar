@@ -57,22 +57,24 @@ class MainActivity: ComponentActivity() {
 }
 
 @Composable
-fun MainScreen() {
+internal fun MainScreen() {
 	val state = rememberCollapsingToolbarState()
 
-	AppBarContainer(
+	CollapsingToolbarScaffold(
 		modifier = Modifier
-			.fillMaxWidth(),
-		collapsingToolbarState = state,
-		scrollStrategy = ScrollStrategy.ExitUntilCollapsed
-	) {
-		CollapsingToolbar(
-			modifier = Modifier
-				.background(MaterialTheme.colors.primary),
-			collapsingToolbarState = state
-		) {
-			// [textSize] is in range of 18..30 depending on [state.progress]
+			.fillMaxSize(),
+		state = state,
+		scrollStrategy = ScrollStrategy.ExitUntilCollapsed,
+		toolbar = {
 			val textSize = (18 + (30 - 18) * state.progress).sp
+
+			Box(
+				modifier = Modifier
+					.background(MaterialTheme.colors.primary)
+					.fillMaxWidth()
+					.height(150.dp)
+					.pin()
+			)
 
 			Text(
 				text = "Title",
@@ -90,19 +92,11 @@ fun MainScreen() {
 				painter = painterResource(id = R.drawable.abc_vector_test),
 				contentDescription = null
 			)
-
-			Box(
-				modifier = Modifier
-					.fillMaxWidth()
-					.height(150.dp)
-					.pin()
-			)
 		}
-
+	) {
 		LazyColumn(
 			modifier = Modifier
 				.fillMaxWidth()
-				.appBarBody()
 		) {
 			items(100) {
 				Text(
@@ -118,7 +112,6 @@ fun MainScreen() {
 				.alpha(0.5f)
 				.background(MaterialTheme.colors.secondary)
 				.height(40.dp)
-				.appBarBody()
 		)
 	}
 }
