@@ -58,7 +58,7 @@ class MainActivity: ComponentActivity() {
 
 @Composable
 internal fun MainScreen() {
-	val state = rememberCollapsingToolbarState()
+	val state = rememberCollapsingToolbarScaffoldState()
 
 	CollapsingToolbarScaffold(
 		modifier = Modifier
@@ -66,7 +66,7 @@ internal fun MainScreen() {
 		state = state,
 		scrollStrategy = ScrollStrategy.ExitUntilCollapsed,
 		toolbar = {
-			val textSize = (18 + (30 - 18) * state.progress).sp
+			val textSize = (18 + (30 - 18) * state.toolbarState.progress).sp
 
 			Box(
 				modifier = Modifier
