@@ -114,7 +114,7 @@ class CollapsingToolbarState(
 			deferredConsumption = current - currentInt
 		}
 
-		return current
+		return consume
 	}
 }
 
