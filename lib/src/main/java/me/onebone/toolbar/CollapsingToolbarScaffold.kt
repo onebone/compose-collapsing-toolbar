@@ -74,6 +74,7 @@ fun CollapsingToolbarScaffold(
 	modifier: Modifier,
 	state: CollapsingToolbarScaffoldState,
 	scrollStrategy: ScrollStrategy,
+	toolbarModifier: Modifier = Modifier,
 	toolbar: @Composable CollapsingToolbarScope.() -> Unit,
 	body: @Composable () -> Unit
 ) {
@@ -103,7 +104,10 @@ fun CollapsingToolbarScaffold(
 		)
 
 		val toolbarPlaceables = subcompose(CollapsingToolbarScaffoldContent.Toolbar) {
-			CollapsingToolbar(collapsingToolbarState = toolbarState) {
+			CollapsingToolbar(
+				modifier = toolbarModifier,
+				collapsingToolbarState = toolbarState
+			) {
 				toolbar()
 			}
 		}.map { it.measure(toolbarConstraints) }
