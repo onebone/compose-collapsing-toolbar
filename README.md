@@ -5,76 +5,65 @@ A simple implementation of [CollapsingToolbarLayout](https://developer.android.c
 You should add `mavenCentral()` repository before installation. Then add the following line to the `dependencies` block in your app level build.gradle:
 
 ```gradle
-implementation "me.onebone:toolbar-compose:2.0.1"
+implementation "me.onebone:toolbar-compose:2.1.0"
 ```
 or build.gradle.kts:
 ```kotlin
-implementation("me.onebone:toolbar-compose:2.0.1")
+implementation("me.onebone:toolbar-compose:2.1.0")
 ```
 
 ## Example
 An example can be found [here](app/src/main).
 
 ## Usage
-### Connecting AppBarContainer and CollapsingToolbar
-The first step you should do to use collapsing toolbar is to connect `AppBarContainer` and `CollapsingToolbar`. This can be accomplished by passing the same `CollapsingToolbarState` instance to `AppBarContainer` and `CollapsingToolbar`.
-A most common way to get the state is by using `rememberCollapsingToolbarState()`:
+### Using CollapsingToolbarScaffold
+`CollapsingToolbarScaffold` is a container to help you place composables and move them as a user dispatches scroll. It provides two holes where you can place you components.
+To use `CollapsingToolbarScaffold` you will need `CollapsingToolbarScaffoldState` which could be retrieved using `rememberCollapsingToolbarScaffoldState()`.
 ```kotlin
-val state = rememberCollapsingToolbarState()
-
-AppBarContainer(
-    collapsingToolbarState = state,
-    /* ... */
+CollapsingToolbarScaffold(
+    state = rememberCollapsingToolbarScaffoldState(), // provide the state of the scaffold
+    toolbar = {
+        // contents of toolbar go here...
+    }
 ) {
-    CollapsingToolbar(
-        // Be sure to pass the same CollapsingToolbarState instance you passed to AppBarContainer
-        collapsingToolbarState = state,
-        /* ... */
-    ) {
-        /* ... */
-    }
+    // main contents go here...
 }
 ```
 
-### Adding child to CollapsingToolbar
-Similar to [CollapsingToolbarLayout](https://developer.android.com/reference/com/google/android/material/appbar/CollapsingToolbarLayout), you may add children to the `CollapsingToolbar`. The toolbar will collapse until it **gets as small as the smallest child**, and will **expand as large as the largest child**.
+The toolbar will collapse until it gets as small as the smallest child, and will expand as large as the largest child.
 
-### Adding child to AppBarContainer
-The AppBarContainer may consist of _at most one CollapsingToolbar_ and _unlimited number of body composable_. Each body composable should be marked with **appBarBody() modifier**:
+Also note that the content should be scrollable for the `CollapsingToolbarScaffold` to consume nested scroll. For `LazyColumn`, you don't have to care of anything because it is scrollable by default. Column, however, is not scrollable by default so you can provide `Modifier.verticalScroll()` to make a content dispatch nested scroll.
 
 ```kotlin
-AppBarContainer(/* ... */) {
-    CollapsingToolbar(/* ... */) {
-        /* ... */
+CollapsingToolbarScaffold(
+    state = rememberCollapsingToolbarScaffoldState(), // provide the state of the scaffold
+    toolbar = {
+        // contents of toolbar go here...
     }
-
-    LazyColumn(
-        modifier = Modifier
-            .appBarBody() // <<--- body composable should be marked with `appBarBody()` modifier 
-    ) {
-        /* ... */
-    }
-}
-```
-
-Note that the `CollapsingToolbar` only if the body composable is scrollable. You don't need to care about anything when using `LazyColumn` because it is scrollable by default, however, if you hope to use non-scrollable such as `Column` or `Row` as body you should use [verticalScroll()](https://developer.android.com/reference/kotlin/androidx/compose/foundation/package-summary#(androidx.compose.ui.Modifier).verticalScroll(androidx.compose.foundation.ScrollState,kotlin.Boolean,androidx.compose.foundation.gestures.FlingBehavior,kotlin.Boolean)) modifier for `CollapsingToolbar` to inspect nested scroll.
-```kotlin
-AppBarContainer(/* ... */) {
-    CollapsingToolbar(/* ... */) {
-        /* ... */
-    }
-
+) {
     Column(
         modifier = Modifier
-            .verticalScroll(rememberScrollState())
-            // ^^ body composable should be scrollable for collapsing toolbar to play with nested scroll
-            .appBarBody()
+            .verticalScroll(rememberScrollState()) // main content should be scrollable for CollapsingToolbarScaffold to consume nested scroll
     ) {
-        /* ... */
+        // ...
     }
 }
 ```
 
+### CollapsingToolbarScaffoldState
+`CollapsingToolbarScaffoldState` is a holder of the scaffold state, such as the value of y offset and how much the toolbar has expanded. The field is public so you may use it as you need.
+Note that the `CollapsingToolbarScaffoldState` is stable, which means that a change on a value of the state triggers a recomposition.
+```kotlin
+val state = rememberCollapsingToolbarScaffoldState()
+val offsetY = state.offsetY // y offset of the layout
+val progress = state.toolbarState.progress // how much the toolbar is expanded (0: collapsed, 1: expanded)
+
+Text(
+    text = "Hello World",
+    textSize = (18 + (30 - 18) * progress).sp // text size depending on the progress
+    // recomposed when the value of the progress is changed
+)
+```
 
 ## parallax, pin, road
 You can tell children of CollapsingToolbar how to deal with a collapse/expansion. This works almost the same way to the `collapseMode` in the `CollapsingToolbarLayout` except for the `road` modifier.
@@ -91,25 +80,29 @@ CollapsingToolbar(/* ... */) {
 The `road()` modifier allows you to place a child relatively to the toolbar. It receives two arguments: `whenCollapsed` and `whenExpanded`. As the name suggests, these describe how to place a child when the toolbar is collapsed or expanded, respectively.
 This can be used to display a title text on the toolbar which is moving as the scroll is fed.
 ```kotlin
-CollapsingToolbar(/* ... */) {
-    Text(
-        text = "Title",
-        modifier = Modifier
-            .road(
-                whenCollapsed = Alignment.CenterStart,
-                whenExpanded = Alignment.BottomEnd
-            )
-    )
+CollapsingToolbarScaffold(
+    toolbar = {
+	    Text(
+            text = "Title",
+            modifier = Modifier
+                .road(
+                    whenCollapsed = Alignment.CenterStart,
+                    whenExpanded = Alignment.BottomEnd
+                )
+        )
+    }
+) {
+    // ...
 }
 ```
 The above code orders the title `Text` to be placed at the _CenterStart_ position when the toolbar is collapsed and _BottomEnd_ position when it is expanded. 
 
 
 ## Scroll Strategy
-`ScrollStrategy` defines how CollapsingToolbar consumes scroll. You can set your desired behavior by providing `scrollStrategy` at `AppBarContainer`:
+`ScrollStrategy` defines how CollapsingToolbar consumes scroll. You can set your desired behavior by providing `scrollStrategy` to `CollapsingToolbarScaffold`:
 
 ```kotlin
-AppBarContainer(
+CollapsingToolbarScaffold(
     /* ... */
     scrollStrategy = ScrollStrategy.EnterAlways // EnterAlways, EnterAlwaysCollapsed, ExitUntilCollapsed are available
 ) {
