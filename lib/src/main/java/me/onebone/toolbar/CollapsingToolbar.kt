@@ -92,7 +92,12 @@ class CollapsingToolbarState(
 
 	val progress: Float
 		@FloatRange(from = 0.0, to = 1.0)
-		get() = ((height - minHeight).toFloat() / (maxHeight - minHeight)).coerceIn(0f, 1f)
+		get() =
+			if(minHeight == maxHeight) {
+				0f
+			}else{
+				((height - minHeight).toFloat() / (maxHeight - minHeight)).coerceIn(0f, 1f)
+			}
 
 	private var deferredConsumption: Float = 0f
 
