@@ -65,7 +65,7 @@ fun ParallaxEffect() {
 	CollapsingToolbarScaffold(
 		modifier = Modifier.fillMaxSize(),
 		state = state,
-		scrollStrategy = ScrollStrategy.EnterAlwaysCollapsed,
+		scrollStrategy = ScrollStrategy.ExitUntilCollapsed,
 		toolbarModifier = Modifier.background(MaterialTheme.colors.primary),
 		toolbar = {
 			// Collapsing toolbar collapses its size as small as the that of

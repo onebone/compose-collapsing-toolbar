@@ -23,6 +23,11 @@
 package me.onebone.toolbar
 
 import androidx.annotation.FloatRange
+import androidx.compose.foundation.MutatePriority
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.ScrollScope
+import androidx.compose.foundation.gestures.ScrollableDefaults
+import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -49,8 +54,27 @@ import kotlin.math.roundToInt
 
 @Stable
 class CollapsingToolbarState(
-	initial: Int = Int.MAX_VALUE
-) {
+	initial: Int = Int.MAX_VALUE,
+	private val flingBehavior: FlingBehavior
+): ScrollableState {
+	private val scrollableState = ScrollableState {
+		val consume = if(it < 0) {
+			max(minHeight.toFloat() - height, it)
+		}else{
+			min(maxHeight.toFloat() - height, it)
+		}
+
+		val current = consume + deferredConsumption
+		val currentInt = current.toInt()
+
+		if(current.absoluteValue > 0) {
+			height += currentInt
+			deferredConsumption = current - currentInt
+		}
+
+		consume
+	}
+
 	/**
 	 * [height] indicates current height of the toolbar.
 	 */
@@ -104,32 +128,47 @@ class CollapsingToolbarState(
 	/**
 	 * @return consumed scroll value is returned
 	 */
-	fun feedScroll(value: Float): Float {
-		val consume = if(value < 0) {
-			max(minHeight.toFloat() - height, value)
-		}else{
-			min(maxHeight.toFloat() - height, value)
+	@Deprecated(
+		message = "use dispatchRawScroll() instead",
+		ReplaceWith("dispatchRawDelta(value)")
+	)
+	fun feedScroll(value: Float): Float =
+		dispatchRawDelta(value)
+
+	internal suspend fun fling(velocity: Float): Float {
+		var left = velocity
+
+		scroll {
+			with(flingBehavior) {
+				left = performFling(velocity)
+			}
 		}
 
-		val current = consume + deferredConsumption
-		val currentInt = current.toInt()
-
-		if(current.absoluteValue > 0) {
-			height += currentInt
-			deferredConsumption = current - currentInt
-		}
-
-		return consume
+		return left
 	}
+
+	override val isScrollInProgress: Boolean
+		get() = scrollableState.isScrollInProgress
+
+	override fun dispatchRawDelta(delta: Float): Float =
+		scrollableState.dispatchRawDelta(delta)
+
+	override suspend fun scroll(
+		scrollPriority: MutatePriority,
+		block: suspend ScrollScope.() -> Unit
+	) = scrollableState.scroll(scrollPriority, block)
 }
 
 @Composable
 fun rememberCollapsingToolbarState(
 	initial: Int = Int.MAX_VALUE
 ): CollapsingToolbarState {
+	val flingBehavior = ScrollableDefaults.flingBehavior()
+
 	return remember {
 		CollapsingToolbarState(
-			initial = initial
+			initial = initial,
+			flingBehavior = flingBehavior
 		)
 	}
 }

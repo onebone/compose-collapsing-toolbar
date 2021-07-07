@@ -23,6 +23,11 @@
 package me.onebone.toolbar
 
 import android.os.Bundle
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.ScrollableDefaults
+import androidx.compose.foundation.gestures.rememberScrollableState
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
@@ -46,10 +51,12 @@ class CollapsingToolbarScaffoldState(
 	internal val offsetYState = mutableStateOf(initialOffsetY)
 }
 
-private class CollapsingToolbarScaffoldStateSaver: Saver<CollapsingToolbarScaffoldState, Bundle> {
+private class CollapsingToolbarScaffoldStateSaver(
+	private val flingBehavior: FlingBehavior
+): Saver<CollapsingToolbarScaffoldState, Bundle> {
 	override fun restore(value: Bundle): CollapsingToolbarScaffoldState =
 		CollapsingToolbarScaffoldState(
-			CollapsingToolbarState(value.getInt("height", Int.MAX_VALUE)),
+			CollapsingToolbarState(value.getInt("height", Int.MAX_VALUE), flingBehavior),
 			value.getInt("offsetY", 0)
 		)
 
@@ -64,7 +71,7 @@ private class CollapsingToolbarScaffoldStateSaver: Saver<CollapsingToolbarScaffo
 fun rememberCollapsingToolbarScaffoldState(
 	toolbarState: CollapsingToolbarState = rememberCollapsingToolbarState()
 ): CollapsingToolbarScaffoldState {
-	return rememberSaveable(toolbarState, saver = CollapsingToolbarScaffoldStateSaver()) {
+	return rememberSaveable(toolbarState, saver = CollapsingToolbarScaffoldStateSaver(ScrollableDefaults.flingBehavior())) {
 		CollapsingToolbarScaffoldState(toolbarState)
 	}
 }
