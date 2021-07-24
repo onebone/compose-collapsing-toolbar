@@ -114,4 +114,15 @@ internal fun MainScreen() {
 				.height(40.dp)
 		)
 	}
+
+	CollapsingToolbarScaffold(
+		modifier = Modifier.fillMaxSize(),
+		state = rememberCollapsingToolbarScaffoldState(),
+		scrollStrategy = ScrollStrategy.ExitUntilCollapsed,
+		toolbar = {
+			// toolbar contents...
+		}
+	) {
+		// body contents...
+	}
 }
