@@ -27,6 +27,7 @@ import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.animateTo
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.MutatePriority
+import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.ScrollScope
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.runtime.Composable
@@ -159,6 +160,20 @@ class CollapsingToolbarState(
 				prev = value
 			}
 		}
+	}
+
+	/**
+	 * @return Remaining velocity after fling
+	 */
+	suspend fun fling(flingBehavior: FlingBehavior, velocity: Float): Float {
+		var left = velocity
+		scroll {
+			with(flingBehavior) {
+				left = performFling(left)
+			}
+		}
+
+		return left
 	}
 
 	override val isScrollInProgress: Boolean

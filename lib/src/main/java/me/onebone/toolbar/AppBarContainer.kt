@@ -22,15 +22,13 @@
 
 package me.onebone.toolbar
 
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Measurable
@@ -82,9 +80,10 @@ fun AppBarContainer(
 	content: @Composable AppbarContainerScope.() -> Unit
 ) {
 	val offsetY = remember { mutableStateOf(0) }
+	val flingBehavior = ScrollableDefaults.flingBehavior()
 
 	val (scope, measurePolicy) = remember(scrollStrategy, collapsingToolbarState) {
-		AppbarContainerScopeImpl(scrollStrategy.create(offsetY, collapsingToolbarState)) to
+		AppbarContainerScopeImpl(scrollStrategy.create(offsetY, collapsingToolbarState, flingBehavior)) to
 				AppbarMeasurePolicy(scrollStrategy, collapsingToolbarState, offsetY)
 	}
 

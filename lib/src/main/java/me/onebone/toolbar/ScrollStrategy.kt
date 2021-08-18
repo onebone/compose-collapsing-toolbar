@@ -22,6 +22,7 @@
 
 package me.onebone.toolbar
 
+import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -32,28 +33,32 @@ enum class ScrollStrategy {
 	EnterAlways {
 		override fun create(
 			offsetY: MutableState<Int>,
-			toolbarState: CollapsingToolbarState
+			toolbarState: CollapsingToolbarState,
+			flingBehavior: FlingBehavior
 		): NestedScrollConnection =
 			EnterAlwaysNestedScrollConnection(offsetY, toolbarState)
 	},
 	EnterAlwaysCollapsed {
 		override fun create(
 			offsetY: MutableState<Int>,
-			toolbarState: CollapsingToolbarState
+			toolbarState: CollapsingToolbarState,
+			flingBehavior: FlingBehavior
 		): NestedScrollConnection =
-			EnterAlwaysCollapsedNestedScrollConnection(offsetY, toolbarState)
+			EnterAlwaysCollapsedNestedScrollConnection(offsetY, toolbarState, flingBehavior)
 	},
 	ExitUntilCollapsed {
 		override fun create(
 			offsetY: MutableState<Int>,
-			toolbarState: CollapsingToolbarState
+			toolbarState: CollapsingToolbarState,
+			flingBehavior: FlingBehavior
 		): NestedScrollConnection =
 			ExitUntilCollapsedNestedScrollConnection(toolbarState)
 	};
 
 	internal abstract fun create(
 		offsetY: MutableState<Int>,
-		toolbarState: CollapsingToolbarState
+		toolbarState: CollapsingToolbarState,
+		flingBehavior: FlingBehavior
 	): NestedScrollConnection
 }
 
@@ -112,7 +117,8 @@ internal class EnterAlwaysNestedScrollConnection(
 
 internal class EnterAlwaysCollapsedNestedScrollConnection(
 	private val offsetY: MutableState<Int>,
-	private val toolbarState: CollapsingToolbarState
+	private val toolbarState: CollapsingToolbarState,
+	private val flingBehavior: FlingBehavior
 ): NestedScrollConnection {
 	private val scrollDelegate = ScrollDelegate(offsetY)
 	private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
@@ -152,8 +158,20 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 		}
 	}
 
-	override suspend fun onPreFling(available: Velocity): Velocity =
-		available.copy(0f, tracker.deriveDelta(available.y))
+	override suspend fun onPreFling(available: Velocity): Velocity {
+		val velocity = tracker.reset()
+
+		val left = if(velocity > 0) {
+			toolbarState.fling(flingBehavior, velocity)
+		}else{
+			// If velocity < 0, the main content should have a remaining scroll space
+			// so the scroll resumes to the onPreScroll(..., Fling) phase. Hence we do
+			// not need to process it manually.
+			velocity
+		}
+
+		return available.copy(y = available.y - left)
+	}
 }
 
 internal class ExitUntilCollapsedNestedScrollConnection(
