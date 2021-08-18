@@ -44,6 +44,7 @@ import androidx.compose.ui.layout.MeasurePolicy
 import androidx.compose.ui.layout.MeasureResult
 import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.layout.ParentDataModifier
+import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
@@ -207,7 +208,8 @@ private class CollapsingToolbarMeasurePolicy(
 		measurables: List<Measurable>,
 		constraints: Constraints
 	): MeasureResult {
-		val placeables = measurables.map {
+		val placeables = ArrayList<Placeable>(measurables.size)
+		measurables.mapTo(placeables) {
 			it.measure(
 				constraints.copy(
 					minWidth = 0,
@@ -217,7 +219,8 @@ private class CollapsingToolbarMeasurePolicy(
 			)
 		}
 
-		val placeStrategy = measurables.map { it.parentData }
+		val placeStrategy = ArrayList<Any?>(measurables.size)
+		measurables.mapTo(placeStrategy) { it.parentData }
 
 		val minHeight = placeables.minOfOrNull { it.height }
 			?.coerceIn(constraints.minHeight, constraints.maxHeight) ?: 0
