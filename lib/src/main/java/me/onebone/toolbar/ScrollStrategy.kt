@@ -36,7 +36,7 @@ enum class ScrollStrategy {
 			toolbarState: CollapsingToolbarState,
 			flingBehavior: FlingBehavior
 		): NestedScrollConnection =
-			EnterAlwaysNestedScrollConnection(offsetY, toolbarState)
+			EnterAlwaysNestedScrollConnection(offsetY, toolbarState, flingBehavior)
 	},
 	EnterAlwaysCollapsed {
 		override fun create(
@@ -79,7 +79,8 @@ private class ScrollDelegate(
 
 internal class EnterAlwaysNestedScrollConnection(
 	private val offsetY: MutableState<Int>,
-	private val toolbarState: CollapsingToolbarState
+	private val toolbarState: CollapsingToolbarState,
+	private val flingBehavior: FlingBehavior
 ): NestedScrollConnection {
 	private val scrollDelegate = ScrollDelegate(offsetY)
 	private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
@@ -111,8 +112,20 @@ internal class EnterAlwaysNestedScrollConnection(
 		return Offset(0f, consume)
 	}
 
-	override suspend fun onPreFling(available: Velocity): Velocity =
-		available.copy(y = tracker.deriveDelta(available.y))
+	override suspend fun onPreFling(available: Velocity): Velocity {
+		val velocity = tracker.reset()
+
+		val left = if(velocity > 0) {
+			toolbarState.fling(flingBehavior, velocity)
+		}else{
+			// If velocity < 0, the main content should have a remaining scroll space
+			// so the scroll resumes to the onPreScroll(..., Fling) phase. Hence we do
+			// not need to process it at onPostFling() manually.
+			velocity
+		}
+
+		return available.copy(y = available.y - left)
+	}
 }
 
 internal class EnterAlwaysCollapsedNestedScrollConnection(
@@ -158,16 +171,19 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 		}
 	}
 
-	override suspend fun onPreFling(available: Velocity): Velocity {
-		val velocity = tracker.reset()
+	override suspend fun onPreFling(available: Velocity): Velocity =
+		available.copy(y = tracker.deriveDelta(available.y))
 
-		val left = if(velocity > 0) {
-			toolbarState.fling(flingBehavior, velocity)
+	override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+		val dy = available.y
+
+		val left = if(dy > 0) {
+			// onPostFling() has positive available scroll value only called if the main scroll
+			// has leftover scroll, i.e. the scroll of the main content has done. So we just process
+			// fling if the available value is positive.
+			toolbarState.fling(flingBehavior, dy)
 		}else{
-			// If velocity < 0, the main content should have a remaining scroll space
-			// so the scroll resumes to the onPreScroll(..., Fling) phase. Hence we do
-			// not need to process it manually.
-			velocity
+			dy
 		}
 
 		return available.copy(y = available.y - left)
