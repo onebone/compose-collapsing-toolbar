@@ -207,33 +207,26 @@ private class CollapsingToolbarMeasurePolicy(
 		measurables: List<Measurable>,
 		constraints: Constraints
 	): MeasureResult {
-		val placeStrategy = arrayOfNulls<Any>(measurables.size)
-
-		var width = 0
-
-		var minHeight = Int.MAX_VALUE
-		var maxHeight = 0
-
-		val placeables = measurables.mapIndexed { i, measurable ->
-			// measure with no height constraints
-			val placeable = measurable.measure(
+		val placeables = measurables.map {
+			it.measure(
 				constraints.copy(
 					minWidth = 0,
 					minHeight = 0,
 					maxHeight = Constraints.Infinity
 				)
 			)
-			placeStrategy[i] = measurable.parentData
-
-			width = max(placeable.width, width)
-
-			minHeight = min(minHeight, placeable.height)
-			maxHeight = max(maxHeight, placeable.height)
-
-			placeable
 		}
 
-		width = width.coerceIn(constraints.minWidth, constraints.maxWidth)
+		val placeStrategy = measurables.map { it.parentData }
+
+		val minHeight = placeables.minOfOrNull { it.height }
+			?.coerceIn(constraints.minHeight, constraints.maxHeight) ?: 0
+
+		val maxHeight = placeables.maxOfOrNull { it.height }
+			?.coerceIn(constraints.minHeight, constraints.maxHeight) ?: 0
+
+		val maxWidth = placeables.maxOfOrNull{ it.width }
+			?.coerceIn(constraints.minWidth, constraints.maxWidth) ?: 0
 
 		collapsingToolbarState.also {
 			it.minHeight = minHeight
@@ -241,7 +234,7 @@ private class CollapsingToolbarMeasurePolicy(
 		}
 
 		val height = collapsingToolbarState.height
-		return layout(width, height) {
+		return layout(maxWidth, height) {
 			val progress = collapsingToolbarState.progress
 
 			placeables.forEachIndexed { i, placeable ->
@@ -257,14 +250,14 @@ private class CollapsingToolbarMeasurePolicy(
 
 						val collapsedOffset = collapsed.align(
 							size = IntSize(placeable.width, placeable.height),
-							space = IntSize(width, height),
+							space = IntSize(maxWidth, height),
 							// TODO LayoutDirection
 							layoutDirection = LayoutDirection.Ltr
 						)
 
 						val expandedOffset = expanded.align(
 							size = IntSize(placeable.width, placeable.height),
-							space = IntSize(width, height),
+							space = IntSize(maxWidth, height),
 							// TODO LayoutDirection
 							layoutDirection = LayoutDirection.Ltr
 						)
