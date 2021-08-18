@@ -26,6 +26,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.unit.Velocity
 
 enum class ScrollStrategy {
 	EnterAlways {
@@ -76,9 +77,11 @@ internal class EnterAlwaysNestedScrollConnection(
 	private val toolbarState: CollapsingToolbarState
 ): NestedScrollConnection {
 	private val scrollDelegate = ScrollDelegate(offsetY)
+	private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
 
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val dy = available.y
+		tracker.delta(dy)
 
 		val toolbar = toolbarState.height.toFloat()
 		val offset = offsetY.value.toFloat()
@@ -102,6 +105,9 @@ internal class EnterAlwaysNestedScrollConnection(
 
 		return Offset(0f, consume)
 	}
+
+	override suspend fun onPreFling(available: Velocity): Velocity =
+		available.copy(y = tracker.deriveDelta(available.y))
 }
 
 internal class EnterAlwaysCollapsedNestedScrollConnection(
@@ -109,9 +115,11 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 	private val toolbarState: CollapsingToolbarState
 ): NestedScrollConnection {
 	private val scrollDelegate = ScrollDelegate(offsetY)
+	private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
 
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val dy = available.y
+		tracker.delta(dy)
 
 		val consumed = if(dy > 0) { // expanding: offset -> body -> toolbar
 			val offsetConsumption = dy.coerceAtMost(-offsetY.value.toFloat())
@@ -143,13 +151,20 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 			Offset(0f, 0f)
 		}
 	}
+
+	override suspend fun onPreFling(available: Velocity): Velocity =
+		available.copy(0f, tracker.deriveDelta(available.y))
 }
 
 internal class ExitUntilCollapsedNestedScrollConnection(
 	private val toolbarState: CollapsingToolbarState
 ): NestedScrollConnection {
+	private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
+
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val dy = available.y
+		tracker.delta(dy)
+
 		val consume = if(dy < 0) { // collapsing: toolbar -> body
 			toolbarState.dispatchRawDelta(dy)
 		}else{
@@ -174,4 +189,7 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 
 		return Offset(0f, consume)
 	}
+
+	override suspend fun onPreFling(available: Velocity): Velocity =
+		available.copy(y = tracker.deriveDelta(available.y))
 }
