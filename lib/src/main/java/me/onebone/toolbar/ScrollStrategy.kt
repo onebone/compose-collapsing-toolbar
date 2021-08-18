@@ -85,7 +85,7 @@ internal class EnterAlwaysNestedScrollConnection(
 
 		// -toolbarHeight <= offsetY + dy <= 0
 		val consume = if(dy < 0) {
-			val toolbarConsumption = toolbarState.feedScroll(dy)
+			val toolbarConsumption = toolbarState.dispatchRawDelta(dy)
 			val remaining = dy - toolbarConsumption
 			val offsetConsumption = remaining.coerceAtLeast(-toolbar - offset)
 			scrollDelegate.doScroll(offsetConsumption)
@@ -95,7 +95,7 @@ internal class EnterAlwaysNestedScrollConnection(
 			val offsetConsumption = dy.coerceAtMost(-offset)
 			scrollDelegate.doScroll(offsetConsumption)
 
-			val toolbarConsumption = toolbarState.feedScroll(dy - offsetConsumption)
+			val toolbarConsumption = toolbarState.dispatchRawDelta(dy - offsetConsumption)
 
 			offsetConsumption + toolbarConsumption
 		}
@@ -119,7 +119,7 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 
 			offsetConsumption
 		}else{ // collapsing: toolbar -> offset -> body
-			val toolbarConsumption = toolbarState.feedScroll(dy)
+			val toolbarConsumption = toolbarState.dispatchRawDelta(dy)
 			val offsetConsumption = (dy - toolbarConsumption).coerceAtLeast(-toolbarState.height.toFloat() - offsetY.value)
 
 			scrollDelegate.doScroll(offsetConsumption)
@@ -138,7 +138,7 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 		val dy = available.y
 
 		return if(dy > 0) {
-			Offset(0f, toolbarState.feedScroll(dy))
+			Offset(0f, toolbarState.dispatchRawDelta(dy))
 		}else{
 			Offset(0f, 0f)
 		}
@@ -151,7 +151,7 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val dy = available.y
 		val consume = if(dy < 0) { // collapsing: toolbar -> body
-			toolbarState.feedScroll(dy)
+			toolbarState.dispatchRawDelta(dy)
 		}else{
 			0f
 		}
@@ -167,7 +167,7 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 		val dy = available.y
 
 		val consume = if(dy > 0) { // expanding: body -> toolbar
-			toolbarState.feedScroll(dy)
+			toolbarState.dispatchRawDelta(dy)
 		}else{
 			0f
 		}

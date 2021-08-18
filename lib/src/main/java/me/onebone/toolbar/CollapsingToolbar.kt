@@ -26,6 +26,9 @@ import androidx.annotation.FloatRange
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.animateTo
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.MutatePriority
+import androidx.compose.foundation.gestures.ScrollScope
+import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -53,7 +56,7 @@ import kotlin.math.roundToInt
 @Stable
 class CollapsingToolbarState(
 	initial: Int = Int.MAX_VALUE
-) {
+): ScrollableState {
 	/**
 	 * [height] indicates current height of the toolbar.
 	 */
@@ -102,12 +105,7 @@ class CollapsingToolbarState(
 				((height - minHeight).toFloat() / (maxHeight - minHeight)).coerceIn(0f, 1f)
 			}
 
-	private var deferredConsumption: Float = 0f
-
-	/**
-	 * @return consumed scroll value is returned
-	 */
-	fun feedScroll(value: Float): Float {
+	private val scrollableState = ScrollableState { value ->
 		val consume = if(value < 0) {
 			max(minHeight.toFloat() - height, value)
 		}else{
@@ -122,24 +120,55 @@ class CollapsingToolbarState(
 			deferredConsumption = current - currentInt
 		}
 
-		return consume
+		consume
 	}
+
+	private var deferredConsumption: Float = 0f
+
+	/**
+	 * @return consumed scroll value is returned
+	 */
+	@Deprecated(
+		message = "feedScroll() is deprecated, use dispatchRawDelta() instead.",
+		replaceWith = ReplaceWith("dispatchRawDelta(value)")
+	)
+	fun feedScroll(value: Float): Float = dispatchRawDelta(value)
 
 	@ExperimentalToolbarApi
 	suspend fun expand(duration: Int = 200) {
 		val anim = AnimationState(height.toFloat())
-		anim.animateTo(maxHeight.toFloat(), tween(duration)) {
-			height = value.toInt()
+
+		scroll {
+			var prev = anim.value
+			anim.animateTo(maxHeight.toFloat(), tween(duration)) {
+				scrollBy(value - prev)
+				prev = value
+			}
 		}
 	}
 
 	@ExperimentalToolbarApi
 	suspend fun collapse(duration: Int = 200) {
 		val anim = AnimationState(height.toFloat())
-		anim.animateTo(minHeight.toFloat(), tween(duration)) {
-			height = value.toInt()
+
+		scroll {
+			var prev = anim.value
+			anim.animateTo(minHeight.toFloat(), tween(duration)) {
+				scrollBy(value - prev)
+				prev = value
+			}
 		}
 	}
+
+	override val isScrollInProgress: Boolean
+		get() = scrollableState.isScrollInProgress
+
+	override fun dispatchRawDelta(delta: Float): Float = scrollableState.dispatchRawDelta(delta)
+
+	override suspend fun scroll(
+		scrollPriority: MutatePriority,
+		block: suspend ScrollScope.() -> Unit
+	) = scrollableState.scroll(scrollPriority, block)
 }
 
 @Composable
@@ -266,7 +295,7 @@ interface CollapsingToolbarScope {
 	fun Modifier.pin(): Modifier
 }
 
-object CollapsingToolbarScopeInstance: CollapsingToolbarScope {
+internal object CollapsingToolbarScopeInstance: CollapsingToolbarScope {
 	override fun Modifier.progress(listener: ProgressListener): Modifier {
 		return this.then(ProgressUpdateListenerModifier(listener))
 	}
