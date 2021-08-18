@@ -23,6 +23,9 @@
 package me.onebone.toolbar
 
 import androidx.annotation.FloatRange
+import androidx.compose.animation.core.AnimationState
+import androidx.compose.animation.core.animateTo
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -120,6 +123,22 @@ class CollapsingToolbarState(
 		}
 
 		return consume
+	}
+
+	@ExperimentalToolbarApi
+	suspend fun expand(duration: Int = 200) {
+		val anim = AnimationState(height.toFloat())
+		anim.animateTo(maxHeight.toFloat(), tween(duration)) {
+			height = value.toInt()
+		}
+	}
+
+	@ExperimentalToolbarApi
+	suspend fun collapse(duration: Int = 200) {
+		val anim = AnimationState(height.toFloat())
+		anim.animateTo(minHeight.toFloat(), tween(duration)) {
+			height = value.toInt()
+		}
 	}
 }
 
