@@ -52,7 +52,7 @@ enum class ScrollStrategy {
 			toolbarState: CollapsingToolbarState,
 			flingBehavior: FlingBehavior
 		): NestedScrollConnection =
-			ExitUntilCollapsedNestedScrollConnection(toolbarState)
+			ExitUntilCollapsedNestedScrollConnection(toolbarState, flingBehavior)
 	};
 
 	internal abstract fun create(
@@ -191,7 +191,8 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 }
 
 internal class ExitUntilCollapsedNestedScrollConnection(
-	private val toolbarState: CollapsingToolbarState
+	private val toolbarState: CollapsingToolbarState,
+	private val flingBehavior: FlingBehavior
 ): NestedScrollConnection {
 	private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
 
@@ -224,6 +225,27 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 		return Offset(0f, consume)
 	}
 
-	override suspend fun onPreFling(available: Velocity): Velocity =
-		available.copy(y = tracker.deriveDelta(available.y))
+	override suspend fun onPreFling(available: Velocity): Velocity {
+		val velocity = tracker.reset()
+
+		val left = if(velocity < 0) {
+			toolbarState.fling(flingBehavior, velocity)
+		}else{
+			velocity
+		}
+
+		return available.copy(y = available.y - left)
+	}
+
+	override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+		val velocity = available.y
+
+		val left = if(velocity > 0) {
+			toolbarState.fling(flingBehavior, velocity)
+		}else{
+			velocity
+		}
+
+		return available.copy(y = available.y - left)
+	}
 }
