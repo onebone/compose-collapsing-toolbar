@@ -5,11 +5,11 @@ A simple implementation of [CollapsingToolbarLayout](https://developer.android.c
 You should add `mavenCentral()` repository before installation. Then add the following line to the `dependencies` block in your app level build.gradle:
 
 ```gradle
-implementation "me.onebone:toolbar-compose:2.1.2"
+implementation "me.onebone:toolbar-compose:2.2.0"
 ```
 or build.gradle.kts:
 ```kotlin
-implementation("me.onebone:toolbar-compose:2.1.2")
+implementation("me.onebone:toolbar-compose:2.2.0")
 ```
 
 ## Example
