@@ -24,7 +24,6 @@ package me.onebone.toolbar
 
 import android.os.Bundle
 import androidx.compose.foundation.gestures.ScrollableDefaults
-import androidx.compose.material.FabPosition
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
@@ -35,8 +34,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.SubcomposeLayout
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.dp
 import kotlin.math.max
 
 @Stable
@@ -80,8 +77,6 @@ fun CollapsingToolbarScaffold(
 	scrollStrategy: ScrollStrategy,
 	toolbarModifier: Modifier = Modifier,
 	toolbar: @Composable CollapsingToolbarScope.() -> Unit,
-	floatingActionButton: @Composable () -> Unit = {},
-	floatingActionButtonPosition: FabPosition = FabPosition.End,
 	body: @Composable () -> Unit
 ) {
 	val flingBehavior = ScrollableDefaults.flingBehavior()
@@ -105,10 +100,10 @@ fun CollapsingToolbarScaffold(
 			minWidth = 0,
 			minHeight = 0,
 			maxHeight =
-				if(scrollStrategy == ScrollStrategy.ExitUntilCollapsed)
-					max(0, constraints.maxHeight - toolbarState.minHeight)
-				else
-					constraints.maxHeight
+			if(scrollStrategy == ScrollStrategy.ExitUntilCollapsed)
+				max(0, constraints.maxHeight - toolbarState.minHeight)
+			else
+				constraints.maxHeight
 		)
 
 		val toolbarPlaceables = subcompose(CollapsingToolbarScaffoldContent.Toolbar) {
@@ -131,48 +126,6 @@ fun CollapsingToolbarScaffold(
 
 		val toolbarHeight = toolbarPlaceables.maxOfOrNull { it.height } ?: 0
 
-		val fabConstraints = constraints.copy(
-			minWidth = 0,
-			minHeight = 0
-		)
-
-		val fabPlaceables = subcompose(
-			CollapsingToolbarScaffoldContent.Fab,
-			floatingActionButton
-		).mapNotNull { measurable ->
-			measurable.measure(fabConstraints).takeIf { it.height != 0 && it.width != 0 }
-		}
-
-		val fabPlacement = if (fabPlaceables.isNotEmpty()) {
-			val fabWidth = fabPlaceables.maxOfOrNull { it.width } ?: 0
-			val fabHeight = fabPlaceables.maxOfOrNull { it.height } ?: 0
-			// FAB distance from the left of the layout, taking into account LTR / RTL
-			val fabLeftOffset = if (floatingActionButtonPosition == FabPosition.End) {
-				if (layoutDirection == LayoutDirection.Ltr) {
-					constraints.maxWidth - 16.dp.roundToPx() - fabWidth
-				} else {
-					16.dp.roundToPx()
-				}
-			} else {
-				(constraints.maxWidth - fabWidth) / 2
-			}
-
-			FabPlacement(
-				isDocked = false,
-				left = fabLeftOffset,
-				width = fabWidth,
-				height = fabHeight
-			)
-		} else {
-			null
-		}
-
-
-		val fabOffsetFromBottom = fabPlacement?.let {
-			it.height + 16.dp.roundToPx()
-		}
-
-
 		val height = max(
 			toolbarHeight,
 			bodyPlaceables.maxOfOrNull { it.height } ?: 0
@@ -186,16 +139,10 @@ fun CollapsingToolbarScaffold(
 			toolbarPlaceables.forEach {
 				it.place(0, state.offsetY)
 			}
-
-			fabPlacement?.let { placement ->
-				fabPlaceables.forEach {
-					it.place(placement.left, constraints.maxHeight - fabOffsetFromBottom!!)
-				}
-			}
 		}
 	}
 }
 
 private enum class CollapsingToolbarScaffoldContent {
-	Toolbar, Body, Fab
+	Toolbar, Body
 }

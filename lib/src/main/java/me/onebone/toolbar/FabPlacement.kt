@@ -26,7 +26,6 @@ import androidx.compose.runtime.Immutable
 
 @Immutable
 class FabPlacement(
-	val isDocked: Boolean,
 	val left: Int,
 	val width: Int,
 	val height: Int
