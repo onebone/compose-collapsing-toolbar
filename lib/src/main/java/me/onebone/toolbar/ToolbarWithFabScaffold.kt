@@ -6,6 +6,7 @@ import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
+@ExperimentalToolbarApi
 @Composable
 fun ToolbarWithFabScaffold(
 	modifier: Modifier,
