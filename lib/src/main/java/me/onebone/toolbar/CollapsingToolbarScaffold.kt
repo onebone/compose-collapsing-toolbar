@@ -100,10 +100,10 @@ fun CollapsingToolbarScaffold(
 			minWidth = 0,
 			minHeight = 0,
 			maxHeight =
-			if(scrollStrategy == ScrollStrategy.ExitUntilCollapsed)
-				max(0, constraints.maxHeight - toolbarState.minHeight)
-			else
-				constraints.maxHeight
+				if(scrollStrategy == ScrollStrategy.ExitUntilCollapsed)
+					max(0, constraints.maxHeight - toolbarState.minHeight)
+				else
+					constraints.maxHeight
 		)
 
 		val toolbarPlaceables = subcompose(CollapsingToolbarScaffoldContent.Toolbar) {
