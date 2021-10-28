@@ -28,5 +28,5 @@ package me.onebone.toolbar
 	AnnotationTarget.PROPERTY,
 	AnnotationTarget.CLASS
 )
-@Retention(AnnotationRetention.SOURCE)
+@Retention(AnnotationRetention.BINARY)
 annotation class ExperimentalToolbarApi
