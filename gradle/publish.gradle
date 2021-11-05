@@ -40,7 +40,7 @@ afterEvaluate {
 					licenses {
 						license {
 							name = 'MIT License'
-							url = 'https://raw.githubusercontent.com/onebone/compose-collapsing-toolbar/master/LICENSE'
+							url = 'https://opensource.org/licenses/MIT'
 						}
 					}
 
