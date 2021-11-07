@@ -9,13 +9,3 @@ class SnapStrategy(
 	val expandDuration: Int = CollapsingToolbarDefaults.EXPAND_DURATION,
 	val collapseDuration: Int = CollapsingToolbarDefaults.COLLAPSE_DURATION
 )
-
-// TODO: Is there a better solution rather OptIn ExperimentalToolbarApi?
-@OptIn(ExperimentalToolbarApi::class)
-internal suspend fun CollapsingToolbarState.processSnap(strategy: SnapStrategy) {
-	if (progress > strategy.edge) {
-		expand(strategy.expandDuration)
-	} else {
-		collapse(strategy.collapseDuration)
-	}
-}

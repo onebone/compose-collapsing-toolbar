@@ -131,6 +131,23 @@ internal class EnterAlwaysNestedScrollConnection(
 
 		return available.copy(y = available.y - left)
 	}
+
+	override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+		// TODO: Cancel expand/collapse animation inside onPreScroll
+		snapStrategy?.let {
+			val isToolbarChangingOffset = offsetY.value != 0
+			if (isToolbarChangingOffset) {
+				// When the toolbar is hiding, it does it through changing the offset and does not
+				// change its height, so we must process not the snap of the toolbar, but the
+				// snap of its offset.
+				toolbarState.processOffsetSnap(it, offsetY)
+			} else {
+				toolbarState.processSnap(it)
+			}
+		}
+
+		return super.onPostFling(consumed, available)
+	}
 }
 
 internal class EnterAlwaysCollapsedNestedScrollConnection(
@@ -190,6 +207,19 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 			toolbarState.fling(flingBehavior, dy)
 		}else{
 			dy
+		}
+
+		// TODO: Cancel expand/collapse animation inside onPreScroll
+		snapStrategy?.let {
+			val isToolbarChangingOffset = offsetY.value != 0//toolbarState.progress == 0f
+			if (isToolbarChangingOffset) {
+				// When the toolbar is hiding, it does it through changing the offset and does not
+				// change its height, so we must process not the snap of the toolbar, but the
+				// snap of its offset.
+				toolbarState.processOffsetSnap(it, offsetY)
+			} else {
+				toolbarState.processSnap(it)
+			}
 		}
 
 		return available.copy(y = available.y - left)

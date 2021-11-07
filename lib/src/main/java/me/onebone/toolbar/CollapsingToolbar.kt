@@ -31,6 +31,7 @@ import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.ScrollScope
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -136,6 +137,7 @@ class CollapsingToolbarState(
 	)
 	fun feedScroll(value: Float): Float = dispatchRawDelta(value)
 
+	// TODO: A strange jump in snap speed is often observed
 	@ExperimentalToolbarApi
 	suspend fun expand(duration: Int = CollapsingToolbarDefaults.EXPAND_DURATION) {
 		val anim = AnimationState(height.toFloat())
@@ -149,6 +151,7 @@ class CollapsingToolbarState(
 		}
 	}
 
+	// TODO: A strange jump in snap speed is often observed
 	@ExperimentalToolbarApi
 	suspend fun collapse(duration: Int = CollapsingToolbarDefaults.COLLAPSE_DURATION) {
 		val anim = AnimationState(height.toFloat())
@@ -159,6 +162,46 @@ class CollapsingToolbarState(
 				scrollBy(value - prev)
 				prev = value
 			}
+		}
+	}
+
+	@ExperimentalToolbarApi
+	suspend fun expandOffset(snapStrategy: SnapStrategy, offsetY: MutableState<Int>) {
+		val anim = AnimationState(offsetY.value.toFloat())
+
+		anim.animateTo(0f, tween(snapStrategy.expandDuration)) {
+			offsetY.value = value.toInt()
+		}
+	}
+
+	@ExperimentalToolbarApi
+	suspend fun collapseOffset(snapStrategy: SnapStrategy, offsetY: MutableState<Int>) {
+		val anim = AnimationState(offsetY.value.toFloat())
+
+		anim.animateTo(-minHeight.toFloat(), tween(snapStrategy.collapseDuration)) {
+			offsetY.value = value.toInt()
+		}
+	}
+
+	// TODO: Is there a better solution rather OptIn ExperimentalToolbarApi?
+	@OptIn(ExperimentalToolbarApi::class)
+	internal suspend fun processSnap(strategy: SnapStrategy) {
+		if (progress > strategy.edge) {
+			expand(strategy.expandDuration)
+		} else {
+			collapse(strategy.collapseDuration)
+		}
+	}
+
+	// TODO: Is there a better solution rather OptIn ExperimentalToolbarApi?
+	@OptIn(ExperimentalToolbarApi::class)
+	internal suspend fun processOffsetSnap(snapStrategy: SnapStrategy, offsetY: MutableState<Int>) {
+		val offsetProgress =
+			1f - ((offsetY.value / (minHeight / 100f)) / 100f).absoluteValue
+		if (offsetProgress > snapStrategy.edge) {
+			expandOffset(snapStrategy, offsetY)
+		} else {
+			collapseOffset(snapStrategy, offsetY)
 		}
 	}
 
