@@ -34,31 +34,35 @@ enum class ScrollStrategy {
 		override fun create(
 			offsetY: MutableState<Int>,
 			toolbarState: CollapsingToolbarState,
-			flingBehavior: FlingBehavior
+			flingBehavior: FlingBehavior,
+			snapStrategy: SnapStrategy?,
 		): NestedScrollConnection =
-			EnterAlwaysNestedScrollConnection(offsetY, toolbarState, flingBehavior)
+			EnterAlwaysNestedScrollConnection(offsetY, toolbarState, flingBehavior, snapStrategy)
 	},
 	EnterAlwaysCollapsed {
 		override fun create(
 			offsetY: MutableState<Int>,
 			toolbarState: CollapsingToolbarState,
-			flingBehavior: FlingBehavior
+			flingBehavior: FlingBehavior,
+			snapStrategy: SnapStrategy?,
 		): NestedScrollConnection =
-			EnterAlwaysCollapsedNestedScrollConnection(offsetY, toolbarState, flingBehavior)
+			EnterAlwaysCollapsedNestedScrollConnection(offsetY, toolbarState, flingBehavior, snapStrategy)
 	},
 	ExitUntilCollapsed {
 		override fun create(
 			offsetY: MutableState<Int>,
 			toolbarState: CollapsingToolbarState,
-			flingBehavior: FlingBehavior
+			flingBehavior: FlingBehavior,
+			snapStrategy: SnapStrategy?,
 		): NestedScrollConnection =
-			ExitUntilCollapsedNestedScrollConnection(toolbarState, flingBehavior)
+			ExitUntilCollapsedNestedScrollConnection(toolbarState, flingBehavior, snapStrategy)
 	};
 
 	internal abstract fun create(
 		offsetY: MutableState<Int>,
 		toolbarState: CollapsingToolbarState,
-		flingBehavior: FlingBehavior
+		flingBehavior: FlingBehavior,
+		snapStrategy: SnapStrategy?,
 	): NestedScrollConnection
 }
 
@@ -80,7 +84,8 @@ private class ScrollDelegate(
 internal class EnterAlwaysNestedScrollConnection(
 	private val offsetY: MutableState<Int>,
 	private val toolbarState: CollapsingToolbarState,
-	private val flingBehavior: FlingBehavior
+	private val flingBehavior: FlingBehavior,
+	private val snapStrategy: SnapStrategy?
 ): NestedScrollConnection {
 	private val scrollDelegate = ScrollDelegate(offsetY)
 	private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
@@ -131,7 +136,8 @@ internal class EnterAlwaysNestedScrollConnection(
 internal class EnterAlwaysCollapsedNestedScrollConnection(
 	private val offsetY: MutableState<Int>,
 	private val toolbarState: CollapsingToolbarState,
-	private val flingBehavior: FlingBehavior
+	private val flingBehavior: FlingBehavior,
+	private val snapStrategy: SnapStrategy?,
 ): NestedScrollConnection {
 	private val scrollDelegate = ScrollDelegate(offsetY)
 	private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
@@ -192,7 +198,8 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 
 internal class ExitUntilCollapsedNestedScrollConnection(
 	private val toolbarState: CollapsingToolbarState,
-	private val flingBehavior: FlingBehavior
+	private val flingBehavior: FlingBehavior,
+	private val snapStrategy: SnapStrategy?
 ): NestedScrollConnection {
 	private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
 
@@ -245,6 +252,9 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 		}else{
 			velocity
 		}
+
+		// TODO: Cancel expand/collapse animation inside onPreScroll
+		snapStrategy?.let { toolbarState.processSnap(it) }
 
 		return available.copy(y = available.y - left)
 	}

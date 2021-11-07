@@ -57,7 +57,7 @@ import kotlin.math.roundToInt
 
 @Stable
 class CollapsingToolbarState(
-	initial: Int = Int.MAX_VALUE
+	initial: Int = CollapsingToolbarDefaults.INITIAL_HEIGHT
 ): ScrollableState {
 	/**
 	 * [height] indicates current height of the toolbar.
@@ -137,7 +137,7 @@ class CollapsingToolbarState(
 	fun feedScroll(value: Float): Float = dispatchRawDelta(value)
 
 	@ExperimentalToolbarApi
-	suspend fun expand(duration: Int = 200) {
+	suspend fun expand(duration: Int = CollapsingToolbarDefaults.EXPAND_DURATION) {
 		val anim = AnimationState(height.toFloat())
 
 		scroll {
@@ -150,7 +150,7 @@ class CollapsingToolbarState(
 	}
 
 	@ExperimentalToolbarApi
-	suspend fun collapse(duration: Int = 200) {
+	suspend fun collapse(duration: Int = CollapsingToolbarDefaults.COLLAPSE_DURATION) {
 		val anim = AnimationState(height.toFloat())
 
 		scroll {
@@ -189,7 +189,7 @@ class CollapsingToolbarState(
 
 @Composable
 fun rememberCollapsingToolbarState(
-	initial: Int = Int.MAX_VALUE
+	initial: Int = CollapsingToolbarDefaults.INITIAL_HEIGHT
 ): CollapsingToolbarState {
 	return remember {
 		CollapsingToolbarState(
@@ -214,6 +214,13 @@ fun CollapsingToolbar(
 		modifier = modifier
 			.clipToBounds()
 	)
+}
+
+object CollapsingToolbarDefaults {
+	const val INITIAL_HEIGHT = Int.MAX_VALUE
+	const val EDGE = 0.5f
+	const val EXPAND_DURATION = 200
+	const val COLLAPSE_DURATION = 200
 }
 
 private class CollapsingToolbarMeasurePolicy(
