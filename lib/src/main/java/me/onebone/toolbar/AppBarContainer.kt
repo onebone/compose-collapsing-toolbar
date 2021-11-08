@@ -40,7 +40,6 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import kotlin.math.max
-import kotlin.math.roundToInt
 
 @Deprecated(
 	"Use AppBarContainer for naming consistency",
@@ -81,9 +80,10 @@ fun AppBarContainer(
 ) {
 	val offsetY = remember { mutableStateOf(0) }
 	val flingBehavior = ScrollableDefaults.flingBehavior()
+	val snapStrategy = null
 
 	val (scope, measurePolicy) = remember(scrollStrategy, collapsingToolbarState) {
-		AppbarContainerScopeImpl(scrollStrategy.create(offsetY, collapsingToolbarState, flingBehavior)) to
+		AppbarContainerScopeImpl(scrollStrategy.create(offsetY, collapsingToolbarState, flingBehavior, snapStrategy)) to
 				AppbarMeasurePolicy(scrollStrategy, collapsingToolbarState, offsetY)
 	}
 
