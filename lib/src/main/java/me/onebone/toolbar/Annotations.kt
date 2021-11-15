@@ -22,7 +22,11 @@
 
 package me.onebone.toolbar
 
-@RequiresOptIn
+@RequiresOptIn(
+	message = "This is an experimental API of compose-collapsing-toolbar. Any declarations with " +
+			"the annotation might be removed or changed in some way without any notice.",
+	level = RequiresOptIn.Level.WARNING
+)
 @Target(
 	AnnotationTarget.FUNCTION,
 	AnnotationTarget.PROPERTY,
