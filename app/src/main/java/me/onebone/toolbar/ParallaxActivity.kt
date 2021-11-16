@@ -27,6 +27,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,14 +36,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.Checkbox
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import me.onebone.toolbar.ui.theme.CollapsingToolbarTheme
 
@@ -62,50 +71,63 @@ class ParallaxActivity: ComponentActivity() {
 fun ParallaxEffect() {
 	val state = rememberCollapsingToolbarScaffoldState()
 
-	CollapsingToolbarScaffold(
-		modifier = Modifier.fillMaxSize(),
-		state = state,
-		scrollStrategy = ScrollStrategy.EnterAlwaysCollapsed,
-		toolbarModifier = Modifier.background(MaterialTheme.colors.primary),
-		toolbar = {
-			// Collapsing toolbar collapses its size as small as the that of
-			// a smallest child. To make the toolbar collapse to 50dp, we create
-			// a dummy Spacer composable.
-			// You may replace it with TopAppBar or other preferred composable.
-			Spacer(
-				modifier = Modifier
-					.fillMaxWidth()
-					.height(50.dp)
-			)
+	var enabled by remember { mutableStateOf(true) }
 
-			Image(
-				painter = painterResource(id = R.drawable.android),
-				modifier = Modifier
-					.parallax(0.5f)
-					.height(300.dp)
-					.graphicsLayer {
-						// change alpha of Image as the toolbar expands
-						alpha = state.toolbarState.progress
-					},
-				contentScale = ContentScale.Crop,
-				contentDescription = null
-			)
-		}
-	) {
-		LazyColumn(
-			modifier = Modifier
-				.fillMaxSize()
-		) {
-			items(
-				List(100) { "Hello World!! $it" }
-			) {
-				Text(
-					text = it,
+	Box {
+		CollapsingToolbarScaffold(
+			modifier = Modifier.fillMaxSize(),
+			state = state,
+			scrollStrategy = ScrollStrategy.EnterAlwaysCollapsed,
+			toolbarModifier = Modifier.background(MaterialTheme.colors.primary),
+			enabled = enabled,
+			toolbar = {
+				// Collapsing toolbar collapses its size as small as the that of
+				// a smallest child. To make the toolbar collapse to 50dp, we create
+				// a dummy Spacer composable.
+				// You may replace it with TopAppBar or other preferred composable.
+				Spacer(
 					modifier = Modifier
 						.fillMaxWidth()
-						.padding(4.dp)
+						.height(50.dp)
+				)
+
+				Image(
+					painter = painterResource(id = R.drawable.android),
+					modifier = Modifier
+						.parallax(0.5f)
+						.height(300.dp)
+						.graphicsLayer {
+							// change alpha of Image as the toolbar expands
+							alpha = state.toolbarState.progress
+						},
+					contentScale = ContentScale.Crop,
+					contentDescription = null
 				)
 			}
+		) {
+			LazyColumn(
+				modifier = Modifier
+					.fillMaxSize()
+			) {
+				items(
+					List(100) { "Hello World!! $it" }
+				) {
+					Text(
+						text = it,
+						modifier = Modifier
+							.fillMaxWidth()
+							.padding(4.dp)
+					)
+				}
+			}
+		}
+
+		Row(
+			verticalAlignment = Alignment.CenterVertically
+		) {
+			Checkbox(checked = enabled, onCheckedChange = { enabled = !enabled })
+
+			Text("Enable collapse/expand", fontWeight = FontWeight.Bold)
 		}
 	}
 }

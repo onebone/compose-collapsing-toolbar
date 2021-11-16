@@ -75,6 +75,7 @@ fun CollapsingToolbarScaffold(
 	modifier: Modifier,
 	state: CollapsingToolbarScaffoldState,
 	scrollStrategy: ScrollStrategy,
+	enabled: Boolean = true,
 	toolbarModifier: Modifier = Modifier,
 	toolbar: @Composable CollapsingToolbarScope.() -> Unit,
 	body: @Composable () -> Unit
@@ -89,7 +90,13 @@ fun CollapsingToolbarScaffold(
 
 	SubcomposeLayout(
 		modifier = modifier
-			.nestedScroll(nestedScrollConnection)
+			.then(
+				if(enabled) {
+					Modifier.nestedScroll(nestedScrollConnection)
+				}else{
+					Modifier
+				}
+			)
 	) { constraints ->
 		val toolbarConstraints = constraints.copy(
 			minWidth = 0,
