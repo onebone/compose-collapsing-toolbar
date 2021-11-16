@@ -96,16 +96,6 @@ fun CollapsingToolbarScaffold(
 			minHeight = 0
 		)
 
-		val bodyConstraints = constraints.copy(
-			minWidth = 0,
-			minHeight = 0,
-			maxHeight =
-				if(scrollStrategy == ScrollStrategy.ExitUntilCollapsed)
-					max(0, constraints.maxHeight - toolbarState.minHeight)
-				else
-					constraints.maxHeight
-		)
-
 		val toolbarPlaceables = subcompose(CollapsingToolbarScaffoldContent.Toolbar) {
 			CollapsingToolbar(
 				modifier = toolbarModifier,
@@ -114,6 +104,18 @@ fun CollapsingToolbarScaffold(
 				toolbar()
 			}
 		}.map { it.measure(toolbarConstraints) }
+
+		val bodyConstraints = constraints.copy(
+			minWidth = 0,
+			minHeight = 0,
+			maxHeight = when(scrollStrategy) {
+				ScrollStrategy.ExitUntilCollapsed ->
+					(constraints.maxHeight - toolbarState.minHeight).coerceAtLeast(0)
+
+				ScrollStrategy.EnterAlways, ScrollStrategy.EnterAlwaysCollapsed ->
+					constraints.maxHeight
+			}
+		)
 
 		val bodyPlaceables = subcompose(CollapsingToolbarScaffoldContent.Body) {
 			body()
