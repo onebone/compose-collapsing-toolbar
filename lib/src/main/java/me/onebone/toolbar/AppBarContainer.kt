@@ -52,13 +52,13 @@ import kotlin.math.max
 fun AppbarContainer(
 	modifier: Modifier = Modifier,
 	scrollStrategy: ScrollStrategy,
-	collapsingToolbarState: CollapsingToolbarState,
+	collapsingToolbarScaffoldState: CollapsingToolbarScaffoldState,
 	content: @Composable AppbarContainerScope.() -> Unit
 ) {
 	AppBarContainer(
 		modifier = modifier,
 		scrollStrategy = scrollStrategy,
-		collapsingToolbarState = collapsingToolbarState,
+		collapsingToolbarScaffoldState = collapsingToolbarScaffoldState,
 		content = content
 	)
 }
@@ -75,16 +75,16 @@ fun AppBarContainer(
 	modifier: Modifier = Modifier,
 	scrollStrategy: ScrollStrategy,
 	/** The state of a connected collapsing toolbar */
-	collapsingToolbarState: CollapsingToolbarState,
+	collapsingToolbarScaffoldState: CollapsingToolbarScaffoldState,
 	content: @Composable AppbarContainerScope.() -> Unit
 ) {
 	val offsetY = remember { mutableStateOf(0) }
 	val flingBehavior = ScrollableDefaults.flingBehavior()
 	val snapStrategy = null
 
-	val (scope, measurePolicy) = remember(scrollStrategy, collapsingToolbarState) {
-		AppbarContainerScopeImpl(scrollStrategy.create(offsetY, collapsingToolbarState, flingBehavior, snapStrategy)) to
-				AppbarMeasurePolicy(scrollStrategy, collapsingToolbarState, offsetY)
+	val (scope, measurePolicy) = remember(scrollStrategy, collapsingToolbarScaffoldState) {
+		AppbarContainerScopeImpl(scrollStrategy.create(offsetY, collapsingToolbarScaffoldState, flingBehavior, snapStrategy)) to
+				AppbarMeasurePolicy(scrollStrategy, collapsingToolbarScaffoldState.toolbarState, offsetY)
 	}
 
 	Layout(

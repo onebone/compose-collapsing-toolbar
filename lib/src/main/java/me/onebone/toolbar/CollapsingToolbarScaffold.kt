@@ -23,6 +23,9 @@
 package me.onebone.toolbar
 
 import android.os.Bundle
+import androidx.compose.animation.core.AnimationState
+import androidx.compose.animation.core.animateTo
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -34,6 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.SubcomposeLayout
+import kotlin.math.absoluteValue
 import kotlin.math.max
 
 @Stable
@@ -45,6 +49,78 @@ class CollapsingToolbarScaffoldState(
 		get() = offsetYState.value
 
 	internal val offsetYState = mutableStateOf(initialOffsetY)
+
+	// TODO: Maybe should move toolbar expand/collapse methods to CollapsingToolbarState
+	//  but offset expand/collapse leave in CollapsingToolbarScaffoldState?
+
+	// TODO: A strange jump in snap speed is often observed
+	@ExperimentalToolbarApi
+	suspend fun expand(duration: Int = CollapsingToolbarDefaults.ExpandDuration) {
+		val anim = AnimationState(toolbarState.height.toFloat())
+
+		toolbarState.scroll {
+			var prev = anim.value
+			anim.animateTo(toolbarState.maxHeight.toFloat(), tween(duration)) {
+				scrollBy(value - prev)
+				prev = value
+			}
+		}
+	}
+
+	// TODO: A strange jump in snap speed is often observed
+	@ExperimentalToolbarApi
+	suspend fun collapse(duration: Int = CollapsingToolbarDefaults.CollapseDuration) {
+		val anim = AnimationState(toolbarState.height.toFloat())
+
+		toolbarState.scroll {
+			var prev = anim.value
+			anim.animateTo(toolbarState.minHeight.toFloat(), tween(duration)) {
+				scrollBy(value - prev)
+				prev = value
+			}
+		}
+	}
+
+	@ExperimentalToolbarApi
+	suspend fun expandOffset(snapStrategy: SnapStrategy) {
+		val anim = AnimationState(offsetYState.value.toFloat())
+
+		anim.animateTo(0f, tween(snapStrategy.expandDuration)) {
+			offsetYState.value = value.toInt()
+		}
+	}
+
+	@ExperimentalToolbarApi
+	suspend fun collapseOffset(snapStrategy: SnapStrategy) {
+		val anim = AnimationState(offsetYState.value.toFloat())
+
+		anim.animateTo(-toolbarState.minHeight.toFloat(), tween(snapStrategy.collapseDuration)) {
+			offsetYState.value = value.toInt()
+		}
+	}
+
+	// TODO: Is there a better solution rather OptIn ExperimentalToolbarApi?
+	@OptIn(ExperimentalToolbarApi::class)
+	internal suspend fun processSnap(strategy: SnapStrategy) {
+		if (toolbarState.progress > strategy.edge) {
+			expand(strategy.expandDuration)
+		} else {
+			collapse(strategy.collapseDuration)
+		}
+	}
+
+	// TODO: Is there a better solution rather OptIn ExperimentalToolbarApi?
+	@OptIn(ExperimentalToolbarApi::class)
+	internal suspend fun processOffsetSnap(snapStrategy: SnapStrategy) {
+		// TODO: Refactor ugly math
+		val offsetProgress =
+			1f - ((offsetYState.value / (toolbarState.minHeight / 100f)) / 100f).absoluteValue
+		if (offsetProgress > snapStrategy.edge) {
+			expandOffset(snapStrategy)
+		} else {
+			collapseOffset(snapStrategy)
+		}
+	}
 }
 
 private class CollapsingToolbarScaffoldStateSaver: Saver<CollapsingToolbarScaffoldState, Bundle> {
@@ -83,7 +159,8 @@ fun CollapsingToolbarScaffold(
 	val flingBehavior = ScrollableDefaults.flingBehavior()
 
 	val nestedScrollConnection = remember(scrollStrategy, state) {
-		scrollStrategy.create(state.offsetYState, state.toolbarState, flingBehavior, snapStrategy)
+		// TODO by RareScrap: Should we make offsetYState public and pass just state?
+		scrollStrategy.create(state.offsetYState, state, flingBehavior, snapStrategy)
 	}
 
 	val toolbarState = state.toolbarState
