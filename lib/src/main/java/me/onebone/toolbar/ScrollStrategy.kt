@@ -124,7 +124,7 @@ internal class EnterAlwaysNestedScrollConnection(
 			velocity
 		}
 
-		return available.copy(y = available.y - left)
+		return Velocity(x = 0f, y = available.y - left)
 	}
 }
 
@@ -172,7 +172,7 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 	}
 
 	override suspend fun onPreFling(available: Velocity): Velocity =
-		available.copy(y = tracker.deriveDelta(available.y))
+		Velocity(x = 0f, y = tracker.deriveDelta(available.y))
 
 	override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
 		val dy = available.y
@@ -186,7 +186,7 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 			dy
 		}
 
-		return available.copy(y = available.y - left)
+		return Velocity(x = 0f, y = available.y - left)
 	}
 }
 
@@ -234,7 +234,7 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 			velocity
 		}
 
-		return available.copy(y = available.y - left)
+		return Velocity(x = 0f, y = available.y - left)
 	}
 
 	override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
@@ -246,6 +246,6 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 			velocity
 		}
 
-		return available.copy(y = available.y - left)
+		return Velocity(x = 0f, y = available.y - left)
 	}
 }
