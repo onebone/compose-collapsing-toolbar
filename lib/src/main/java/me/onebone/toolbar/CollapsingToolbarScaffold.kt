@@ -117,10 +117,12 @@ fun CollapsingToolbarScaffold(
 			minHeight = 0,
 			maxHeight = when(scrollStrategy) {
 				ScrollStrategy.ExitUntilCollapsed ->
-					(constraints.maxHeight - toolbarState.minHeight).coerceAtLeast(0)
+					(constraints.maxHeight - toolbarState.minHeight)
+						.coerceAtLeast(0)
 
 				ScrollStrategy.EnterAlways, ScrollStrategy.EnterAlwaysCollapsed ->
-					constraints.maxHeight
+					(constraints.maxHeight - toolbarState.height - state.offsetY)
+						.coerceAtLeast(0)
 			}
 		)
 
