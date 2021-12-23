@@ -302,9 +302,9 @@ private suspend fun CollapsingToolbarState.performSnap(strategy: SnapStrategy) {
 // TODO: Is there a better solution rather OptIn ExperimentalToolbarApi?
 @OptIn(ExperimentalToolbarApi::class)
 private suspend fun CollapsingToolbarScaffoldState.performOffsetSnap(snapStrategy: SnapStrategy) {
-	// TODO: Refactor ugly math
-	val offsetProgress =
-		1f - ((offsetY / (toolbarState.minHeight / 100f)) / 100f).absoluteValue
+	if (toolbarState.minHeight == 0) return
+
+	val offsetProgress = 1f - (offsetY / toolbarState.minHeight).absoluteValue
 	if (offsetProgress > snapStrategy.edge) {
 		expandOffset(snapStrategy.expandDuration)
 	} else {
