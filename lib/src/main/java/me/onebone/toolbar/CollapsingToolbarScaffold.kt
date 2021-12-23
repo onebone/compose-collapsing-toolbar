@@ -50,19 +50,19 @@ class CollapsingToolbarScaffoldState(
 	internal val offsetYState = mutableStateOf(initialOffsetY)
 
 	@ExperimentalToolbarApi
-	suspend fun expandOffset(snapStrategy: SnapStrategy) {
+	suspend fun expandOffset(duration: Int = CollapsingToolbarDefaults.ExpandDuration) {
 		val anim = AnimationState(offsetY.toFloat())
 
-		anim.animateTo(0f, tween(snapStrategy.expandDuration)) {
+		anim.animateTo(0f, tween(duration)) {
 			offsetYState.value = value.toInt()
 		}
 	}
 
 	@ExperimentalToolbarApi
-	suspend fun collapseOffset(snapStrategy: SnapStrategy) {
+	suspend fun collapseOffset(duration: Int = CollapsingToolbarDefaults.CollapseDuration) {
 		val anim = AnimationState(offsetY.toFloat())
 
-		anim.animateTo(-toolbarState.minHeight.toFloat(), tween(snapStrategy.collapseDuration)) {
+		anim.animateTo(-toolbarState.minHeight.toFloat(), tween(duration)) {
 			offsetYState.value = value.toInt()
 		}
 	}

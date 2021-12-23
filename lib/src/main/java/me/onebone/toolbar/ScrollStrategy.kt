@@ -306,8 +306,8 @@ private suspend fun CollapsingToolbarScaffoldState.performOffsetSnap(snapStrateg
 	val offsetProgress =
 		1f - ((offsetY / (toolbarState.minHeight / 100f)) / 100f).absoluteValue
 	if (offsetProgress > snapStrategy.edge) {
-		expandOffset(snapStrategy)
+		expandOffset(snapStrategy.expandDuration)
 	} else {
-		collapseOffset(snapStrategy)
+		collapseOffset(snapStrategy.collapseDuration)
 	}
 }
