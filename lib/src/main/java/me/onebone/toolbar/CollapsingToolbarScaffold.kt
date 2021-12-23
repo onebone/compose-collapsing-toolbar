@@ -50,37 +50,6 @@ class CollapsingToolbarScaffoldState(
 
 	internal val offsetYState = mutableStateOf(initialOffsetY)
 
-	// TODO: Maybe should move toolbar expand/collapse methods to CollapsingToolbarState
-	//  but offset expand/collapse leave in CollapsingToolbarScaffoldState?
-
-	// TODO: A strange jump in snap speed is often observed
-	@ExperimentalToolbarApi
-	suspend fun expand(duration: Int = CollapsingToolbarDefaults.ExpandDuration) {
-		val anim = AnimationState(toolbarState.height.toFloat())
-
-		toolbarState.scroll {
-			var prev = anim.value
-			anim.animateTo(toolbarState.maxHeight.toFloat(), tween(duration)) {
-				scrollBy(value - prev)
-				prev = value
-			}
-		}
-	}
-
-	// TODO: A strange jump in snap speed is often observed
-	@ExperimentalToolbarApi
-	suspend fun collapse(duration: Int = CollapsingToolbarDefaults.CollapseDuration) {
-		val anim = AnimationState(toolbarState.height.toFloat())
-
-		toolbarState.scroll {
-			var prev = anim.value
-			anim.animateTo(toolbarState.minHeight.toFloat(), tween(duration)) {
-				scrollBy(value - prev)
-				prev = value
-			}
-		}
-	}
-
 	@ExperimentalToolbarApi
 	suspend fun expandOffset(snapStrategy: SnapStrategy) {
 		val anim = AnimationState(offsetYState.value.toFloat())
@@ -103,9 +72,9 @@ class CollapsingToolbarScaffoldState(
 	@OptIn(ExperimentalToolbarApi::class)
 	internal suspend fun processSnap(strategy: SnapStrategy) {
 		if (toolbarState.progress > strategy.edge) {
-			expand(strategy.expandDuration)
+			toolbarState.expand(strategy.expandDuration)
 		} else {
-			collapse(strategy.collapseDuration)
+			toolbarState.collapse(strategy.collapseDuration)
 		}
 	}
 
