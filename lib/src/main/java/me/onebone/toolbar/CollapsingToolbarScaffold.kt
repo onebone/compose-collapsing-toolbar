@@ -37,7 +37,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.SubcomposeLayout
-import kotlin.math.absoluteValue
 import kotlin.math.max
 
 @Stable
@@ -65,29 +64,6 @@ class CollapsingToolbarScaffoldState(
 
 		anim.animateTo(-toolbarState.minHeight.toFloat(), tween(snapStrategy.collapseDuration)) {
 			offsetYState.value = value.toInt()
-		}
-	}
-
-	// TODO: Is there a better solution rather OptIn ExperimentalToolbarApi?
-	@OptIn(ExperimentalToolbarApi::class)
-	internal suspend fun processSnap(strategy: SnapStrategy) {
-		if (toolbarState.progress > strategy.edge) {
-			toolbarState.expand(strategy.expandDuration)
-		} else {
-			toolbarState.collapse(strategy.collapseDuration)
-		}
-	}
-
-	// TODO: Is there a better solution rather OptIn ExperimentalToolbarApi?
-	@OptIn(ExperimentalToolbarApi::class)
-	internal suspend fun processOffsetSnap(snapStrategy: SnapStrategy) {
-		// TODO: Refactor ugly math
-		val offsetProgress =
-			1f - ((offsetY / (toolbarState.minHeight / 100f)) / 100f).absoluteValue
-		if (offsetProgress > snapStrategy.edge) {
-			expandOffset(snapStrategy)
-		} else {
-			collapseOffset(snapStrategy)
 		}
 	}
 }

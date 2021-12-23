@@ -28,6 +28,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.unit.Velocity
+import kotlin.math.absoluteValue
 
 enum class ScrollStrategy {
 	EnterAlways {
@@ -136,9 +137,9 @@ internal class EnterAlwaysNestedScrollConnection(
 				// When the toolbar is hiding, it does it through changing the offset and does not
 				// change its height, so we must process not the snap of the toolbar, but the
 				// snap of its offset.
-				scaffoldState.processOffsetSnap(it)
+				scaffoldState.performOffsetSnap(it)
 			} else {
-				scaffoldState.processSnap(it)
+				toolbarState.performSnap(it)
 			}
 		}
 
@@ -213,9 +214,9 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 				// When the toolbar is hiding, it does it through changing the offset and does not
 				// change its height, so we must process not the snap of the toolbar, but the
 				// snap of its offset.
-				scaffoldState.processOffsetSnap(it)
+				scaffoldState.performOffsetSnap(it)
 			} else {
-				scaffoldState.processSnap(it)
+				toolbarState.performSnap(it)
 			}
 		}
 
@@ -282,8 +283,31 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 		}
 
 		// TODO: Cancel expand/collapse animation inside onPreScroll
-		snapStrategy?.let { scaffoldState.processSnap(it) }
+		snapStrategy?.let { scaffoldState.toolbarState.performSnap(it) }
 
 		return available.copy(y = available.y - left)
+	}
+}
+
+// TODO: Is there a better solution rather OptIn ExperimentalToolbarApi?
+@OptIn(ExperimentalToolbarApi::class)
+private suspend fun CollapsingToolbarState.performSnap(strategy: SnapStrategy) {
+	if (progress > strategy.edge) {
+		expand(strategy.expandDuration)
+	} else {
+		collapse(strategy.collapseDuration)
+	}
+}
+
+// TODO: Is there a better solution rather OptIn ExperimentalToolbarApi?
+@OptIn(ExperimentalToolbarApi::class)
+private suspend fun CollapsingToolbarScaffoldState.performOffsetSnap(snapStrategy: SnapStrategy) {
+	// TODO: Refactor ugly math
+	val offsetProgress =
+		1f - ((offsetY / (toolbarState.minHeight / 100f)) / 100f).absoluteValue
+	if (offsetProgress > snapStrategy.edge) {
+		expandOffset(snapStrategy)
+	} else {
+		collapseOffset(snapStrategy)
 	}
 }
