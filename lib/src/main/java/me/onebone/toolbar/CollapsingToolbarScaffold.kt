@@ -52,7 +52,7 @@ class CollapsingToolbarScaffoldState(
 
 	@ExperimentalToolbarApi
 	suspend fun expandOffset(snapStrategy: SnapStrategy) {
-		val anim = AnimationState(offsetYState.value.toFloat())
+		val anim = AnimationState(offsetY.toFloat())
 
 		anim.animateTo(0f, tween(snapStrategy.expandDuration)) {
 			offsetYState.value = value.toInt()
@@ -61,7 +61,7 @@ class CollapsingToolbarScaffoldState(
 
 	@ExperimentalToolbarApi
 	suspend fun collapseOffset(snapStrategy: SnapStrategy) {
-		val anim = AnimationState(offsetYState.value.toFloat())
+		val anim = AnimationState(offsetY.toFloat())
 
 		anim.animateTo(-toolbarState.minHeight.toFloat(), tween(snapStrategy.collapseDuration)) {
 			offsetYState.value = value.toInt()
@@ -83,7 +83,7 @@ class CollapsingToolbarScaffoldState(
 	internal suspend fun processOffsetSnap(snapStrategy: SnapStrategy) {
 		// TODO: Refactor ugly math
 		val offsetProgress =
-			1f - ((offsetYState.value / (toolbarState.minHeight / 100f)) / 100f).absoluteValue
+			1f - ((offsetY / (toolbarState.minHeight / 100f)) / 100f).absoluteValue
 		if (offsetProgress > snapStrategy.edge) {
 			expandOffset(snapStrategy)
 		} else {
@@ -128,8 +128,7 @@ fun CollapsingToolbarScaffold(
 	val flingBehavior = ScrollableDefaults.flingBehavior()
 
 	val nestedScrollConnection = remember(scrollStrategy, state) {
-		// TODO by RareScrap: Should we make offsetYState public and pass just state?
-		scrollStrategy.create(state.offsetYState, state, flingBehavior, snapStrategy)
+		scrollStrategy.create(state, flingBehavior, snapStrategy)
 	}
 
 	val toolbarState = state.toolbarState
