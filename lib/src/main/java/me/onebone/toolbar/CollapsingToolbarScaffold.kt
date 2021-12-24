@@ -96,7 +96,7 @@ fun CollapsingToolbarScaffold(
 	modifier: Modifier,
 	state: CollapsingToolbarScaffoldState,
 	scrollStrategy: ScrollStrategy,
-	snapStrategy: SnapStrategy? = null,
+	snapConfig: SnapConfig? = null,
 	toolbarModifier: Modifier = Modifier,
 	toolbar: @Composable CollapsingToolbarScope.() -> Unit,
 	body: @Composable () -> Unit
@@ -104,7 +104,7 @@ fun CollapsingToolbarScaffold(
 	val flingBehavior = ScrollableDefaults.flingBehavior()
 
 	val nestedScrollConnection = remember(scrollStrategy, state) {
-		scrollStrategy.create(state, flingBehavior, snapStrategy)
+		scrollStrategy.create(state, flingBehavior, snapConfig)
 	}
 
 	val toolbarState = state.toolbarState

@@ -35,31 +35,31 @@ enum class ScrollStrategy {
 		override fun create(
 			scaffoldState: CollapsingToolbarScaffoldState,
 			flingBehavior: FlingBehavior,
-			snapStrategy: SnapStrategy?,
+			snapConfig: SnapConfig?,
 		): NestedScrollConnection =
-			EnterAlwaysNestedScrollConnection(scaffoldState, flingBehavior, snapStrategy)
+			EnterAlwaysNestedScrollConnection(scaffoldState, flingBehavior, snapConfig)
 	},
 	EnterAlwaysCollapsed {
 		override fun create(
 			scaffoldState: CollapsingToolbarScaffoldState,
 			flingBehavior: FlingBehavior,
-			snapStrategy: SnapStrategy?,
+			snapConfig: SnapConfig?,
 		): NestedScrollConnection =
-			EnterAlwaysCollapsedNestedScrollConnection(scaffoldState, flingBehavior, snapStrategy)
+			EnterAlwaysCollapsedNestedScrollConnection(scaffoldState, flingBehavior, snapConfig)
 	},
 	ExitUntilCollapsed {
 		override fun create(
 			scaffoldState: CollapsingToolbarScaffoldState,
 			flingBehavior: FlingBehavior,
-			snapStrategy: SnapStrategy?,
+			snapConfig: SnapConfig?,
 		): NestedScrollConnection =
-			ExitUntilCollapsedNestedScrollConnection(scaffoldState, flingBehavior, snapStrategy)
+			ExitUntilCollapsedNestedScrollConnection(scaffoldState, flingBehavior, snapConfig)
 	};
 
 	internal abstract fun create(
 		scaffoldState: CollapsingToolbarScaffoldState,
 		flingBehavior: FlingBehavior,
-		snapStrategy: SnapStrategy?,
+		snapConfig: SnapConfig?,
 	): NestedScrollConnection
 }
 
@@ -81,7 +81,7 @@ private class ScrollDelegate(
 internal class EnterAlwaysNestedScrollConnection(
 	private val scaffoldState: CollapsingToolbarScaffoldState,
 	private val flingBehavior: FlingBehavior,
-	private val snapStrategy: SnapStrategy?
+	private val snapConfig: SnapConfig?
 ): NestedScrollConnection {
 	private val scrollDelegate = ScrollDelegate(scaffoldState.offsetYState)
 	private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
@@ -131,7 +131,7 @@ internal class EnterAlwaysNestedScrollConnection(
 
 	override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
 		// TODO: Cancel expand/collapse animation inside onPreScroll
-		snapStrategy?.let {
+		snapConfig?.let {
 			val isToolbarChangingOffset = scaffoldState.offsetY != 0
 			if (isToolbarChangingOffset) {
 				// When the toolbar is hiding, it does it through changing the offset and does not
@@ -150,7 +150,7 @@ internal class EnterAlwaysNestedScrollConnection(
 internal class EnterAlwaysCollapsedNestedScrollConnection(
 	private val scaffoldState: CollapsingToolbarScaffoldState,
 	private val flingBehavior: FlingBehavior,
-	private val snapStrategy: SnapStrategy?,
+	private val snapConfig: SnapConfig?,
 ): NestedScrollConnection {
 	private val scrollDelegate = ScrollDelegate(scaffoldState.offsetYState)
 	private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
@@ -208,7 +208,7 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 		}
 
 		// TODO: Cancel expand/collapse animation inside onPreScroll
-		snapStrategy?.let {
+		snapConfig?.let {
 			val isToolbarChangingOffset = scaffoldState.offsetY != 0
 			if (isToolbarChangingOffset) {
 				// When the toolbar is hiding, it does it through changing the offset and does not
@@ -227,7 +227,7 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 internal class ExitUntilCollapsedNestedScrollConnection(
 	private val scaffoldState: CollapsingToolbarScaffoldState,
 	private val flingBehavior: FlingBehavior,
-	private val snapStrategy: SnapStrategy?
+	private val snapConfig: SnapConfig?
 ): NestedScrollConnection {
 	private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
 	private val toolbarState = scaffoldState.toolbarState
@@ -283,7 +283,7 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 		}
 
 		// TODO: Cancel expand/collapse animation inside onPreScroll
-		snapStrategy?.let { scaffoldState.toolbarState.performSnap(it) }
+		snapConfig?.let { scaffoldState.toolbarState.performSnap(it) }
 
 		return available.copy(y = available.y - left)
 	}
@@ -291,23 +291,23 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 
 // TODO: Is there a better solution rather OptIn ExperimentalToolbarApi?
 @OptIn(ExperimentalToolbarApi::class)
-private suspend fun CollapsingToolbarState.performSnap(strategy: SnapStrategy) {
-	if (progress > strategy.edge) {
-		expand(strategy.expandDuration)
+private suspend fun CollapsingToolbarState.performSnap(snapConfig: SnapConfig) {
+	if (progress > snapConfig.edge) {
+		expand(snapConfig.expandDuration)
 	} else {
-		collapse(strategy.collapseDuration)
+		collapse(snapConfig.collapseDuration)
 	}
 }
 
 // TODO: Is there a better solution rather OptIn ExperimentalToolbarApi?
 @OptIn(ExperimentalToolbarApi::class)
-private suspend fun CollapsingToolbarScaffoldState.performOffsetSnap(snapStrategy: SnapStrategy) {
+private suspend fun CollapsingToolbarScaffoldState.performOffsetSnap(snapConfig: SnapConfig) {
 	if (toolbarState.minHeight == 0) return
 
 	val offsetProgress = 1f - (offsetY / toolbarState.minHeight).absoluteValue
-	if (offsetProgress > snapStrategy.edge) {
-		expandOffset(snapStrategy.expandDuration)
+	if (offsetProgress > snapConfig.edge) {
+		expandOffset(snapConfig.expandDuration)
 	} else {
-		collapseOffset(snapStrategy.collapseDuration)
+		collapseOffset(snapConfig.collapseDuration)
 	}
 }
