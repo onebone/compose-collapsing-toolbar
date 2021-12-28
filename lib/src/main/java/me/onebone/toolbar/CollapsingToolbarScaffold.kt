@@ -125,7 +125,7 @@ fun CollapsingToolbarScaffold(
 
 		val toolbarPlaceable = measurables[0].measure(toolbarConstraints)
 		val bodyPlaceables =
-			measurables.drop(1).map { it.measure(bodyConstraints) }// [1].measure(bodyConstraints)
+			measurables.drop(1).map { it.measure(bodyConstraints) }
 
 		val toolbarHeight = toolbarPlaceable.height
 
