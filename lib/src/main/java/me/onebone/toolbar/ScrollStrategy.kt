@@ -292,9 +292,9 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 // TODO: Is there a better solution rather OptIn ExperimentalToolbarApi?
 @OptIn(ExperimentalToolbarApi::class)
 private suspend fun CollapsingToolbarState.performSnap(snapConfig: SnapConfig) {
-	if (progress > snapConfig.edge) {
+	if (progress > snapConfig.edge && progress < 1f) {
 		expand(snapConfig.expandDuration)
-	} else {
+	} else if (progress <= snapConfig.edge && progress > 0f){
 		collapse(snapConfig.collapseDuration)
 	}
 }
