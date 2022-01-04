@@ -139,10 +139,10 @@ fun CollapsingToolbarScaffold(
 		).coerceIn(constraints.minHeight, constraints.maxHeight)
 
 		layout(width, height) {
-			toolbarPlaceable.place(0, state.offsetY)
 			bodyPlaceables.forEach {
 				it.place(0, toolbarHeight + state.offsetY)
 			}
+			toolbarPlaceable.place(0, state.offsetY)
 		}
 	}
 }
