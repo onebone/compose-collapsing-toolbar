@@ -33,7 +33,7 @@ import androidx.compose.runtime.saveable.SaverScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.layout.Layout
 import kotlin.math.max
 
 @Stable
@@ -88,34 +88,33 @@ fun CollapsingToolbarScaffold(
 
 	val toolbarState = state.toolbarState
 
-	SubcomposeLayout(
-		modifier = modifier
-			.then(
-				if(enabled) {
-					Modifier.nestedScroll(nestedScrollConnection)
-				}else{
-					Modifier
-				}
-			)
-	) { constraints ->
-		val toolbarConstraints = constraints.copy(
-			minWidth = 0,
-			minHeight = 0
-		)
-
-		val toolbarPlaceables = subcompose(CollapsingToolbarScaffoldContent.Toolbar) {
+	Layout(
+		content = {
 			CollapsingToolbar(
 				modifier = toolbarModifier,
 				collapsingToolbarState = toolbarState
 			) {
 				toolbar()
 			}
-		}.map { it.measure(toolbarConstraints) }
-
+			body()
+		},
+		modifier = modifier
+			.then(
+				if (enabled) {
+					Modifier.nestedScroll(nestedScrollConnection)
+				} else {
+					Modifier
+				}
+			)
+	) { measurables, constraints ->
+		val toolbarConstraints = constraints.copy(
+			minWidth = 0,
+			minHeight = 0
+		)
 		val bodyConstraints = constraints.copy(
 			minWidth = 0,
 			minHeight = 0,
-			maxHeight = when(scrollStrategy) {
+			maxHeight = when (scrollStrategy) {
 				ScrollStrategy.ExitUntilCollapsed ->
 					(constraints.maxHeight - toolbarState.minHeight).coerceAtLeast(0)
 
@@ -124,17 +123,16 @@ fun CollapsingToolbarScaffold(
 			}
 		)
 
-		val bodyPlaceables = subcompose(CollapsingToolbarScaffoldContent.Body) {
-			body()
-		}.map { it.measure(bodyConstraints) }
+		val toolbarPlaceable = measurables[0].measure(toolbarConstraints)
+		val bodyPlaceables =
+			measurables.drop(1).map { it.measure(bodyConstraints) }
+
+		val toolbarHeight = toolbarPlaceable.height
 
 		val width = max(
-			toolbarPlaceables.maxOfOrNull { it.width } ?: 0,
+			toolbarPlaceable.width,
 			bodyPlaceables.maxOfOrNull { it.width } ?: 0
 		).coerceIn(constraints.minWidth, constraints.maxWidth)
-
-		val toolbarHeight = toolbarPlaceables.maxOfOrNull { it.height } ?: 0
-
 		val height = max(
 			toolbarHeight,
 			bodyPlaceables.maxOfOrNull { it.height } ?: 0
@@ -144,14 +142,7 @@ fun CollapsingToolbarScaffold(
 			bodyPlaceables.forEach {
 				it.place(0, toolbarHeight + state.offsetY)
 			}
-
-			toolbarPlaceables.forEach {
-				it.place(0, state.offsetY)
-			}
+			toolbarPlaceable.place(0, state.offsetY)
 		}
 	}
-}
-
-private enum class CollapsingToolbarScaffoldContent {
-	Toolbar, Body
 }
