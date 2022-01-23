@@ -31,9 +31,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.SaverScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.ParentDataModifier
+import androidx.compose.ui.unit.Density
 import kotlin.math.max
 
 @Stable
@@ -70,6 +73,11 @@ fun rememberCollapsingToolbarScaffoldState(
 	}
 }
 
+interface CollapsingToolbarScaffoldScope {
+	@ExperimentalToolbarApi
+	fun Modifier.align(alignment: Alignment): Modifier
+}
+
 @Composable
 fun CollapsingToolbarScaffold(
 	modifier: Modifier,
@@ -78,7 +86,7 @@ fun CollapsingToolbarScaffold(
 	enabled: Boolean = true,
 	toolbarModifier: Modifier = Modifier,
 	toolbar: @Composable CollapsingToolbarScope.() -> Unit,
-	body: @Composable () -> Unit
+	body: @Composable CollapsingToolbarScaffoldScope.() -> Unit
 ) {
 	val flingBehavior = ScrollableDefaults.flingBehavior()
 
@@ -96,7 +104,7 @@ fun CollapsingToolbarScaffold(
 			) {
 				toolbar()
 			}
-			body()
+			CollapsingToolbarScaffoldScopeInstance.body()
 		},
 		modifier = modifier
 			.then(
@@ -146,3 +154,21 @@ fun CollapsingToolbarScaffold(
 		}
 	}
 }
+
+internal object CollapsingToolbarScaffoldScopeInstance: CollapsingToolbarScaffoldScope {
+	@ExperimentalToolbarApi
+	override fun Modifier.align(alignment: Alignment): Modifier =
+		this.then(ScaffoldChildAlignmentModifier(alignment))
+}
+
+private class ScaffoldChildAlignmentModifier(
+	private val alignment: Alignment
+) : ParentDataModifier {
+	override fun Density.modifyParentData(parentData: Any?): Any {
+		return (parentData as? ScaffoldParentData) ?: ScaffoldParentData(alignment)
+	}
+}
+
+data class ScaffoldParentData(
+	var alignment: Alignment? = null
+)
