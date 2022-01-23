@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.Button
 import androidx.compose.material.Checkbox
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -119,6 +120,16 @@ fun ParallaxEffect() {
 							.padding(4.dp)
 					)
 				}
+			}
+
+			@OptIn(ExperimentalToolbarApi::class)
+			Button(
+				modifier = Modifier
+					.padding(16.dp)
+					.align(Alignment.BottomEnd),
+				onClick = {  }
+			) {
+				Text(text = "Floating Button!")
 			}
 		}
 

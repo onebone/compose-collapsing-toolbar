@@ -37,6 +37,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.ParentDataModifier
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import kotlin.math.max
 
 @Stable
@@ -104,6 +106,7 @@ fun CollapsingToolbarScaffold(
 			) {
 				toolbar()
 			}
+
 			CollapsingToolbarScaffoldScopeInstance.body()
 		},
 		modifier = modifier
@@ -115,6 +118,10 @@ fun CollapsingToolbarScaffold(
 				}
 			)
 	) { measurables, constraints ->
+		check(measurables.size >= 2) {
+			"the number of children should be at least 2: toolbar, (at least one) body"
+		}
+
 		val toolbarConstraints = constraints.copy(
 			minWidth = 0,
 			minHeight = 0
@@ -132,8 +139,14 @@ fun CollapsingToolbarScaffold(
 		)
 
 		val toolbarPlaceable = measurables[0].measure(toolbarConstraints)
-		val bodyPlaceables =
-			measurables.drop(1).map { it.measure(bodyConstraints) }
+
+		val bodyMeasurables = measurables.subList(1, measurables.size)
+		val childrenAlignments = bodyMeasurables.mapTo(ArrayList(bodyMeasurables.size)) {
+			(it.parentData as? ScaffoldParentData)?.alignment
+		}
+		val bodyPlaceables = bodyMeasurables.mapTo(ArrayList(bodyMeasurables.size)) {
+			it.measure(bodyConstraints)
+		}
 
 		val toolbarHeight = toolbarPlaceable.height
 
@@ -147,8 +160,19 @@ fun CollapsingToolbarScaffold(
 		).coerceIn(constraints.minHeight, constraints.maxHeight)
 
 		layout(width, height) {
-			bodyPlaceables.forEach {
-				it.place(0, toolbarHeight + state.offsetY)
+			bodyPlaceables.forEachIndexed { index, placeable ->
+				val alignment = childrenAlignments[index]
+
+				if (alignment == null) {
+					placeable.place(0, toolbarHeight + state.offsetY)
+				} else {
+					val offset = alignment.align(
+						size = IntSize(placeable.width, placeable.height),
+						space = IntSize(width, height),
+						layoutDirection = LayoutDirection.Ltr
+					)
+					placeable.place(offset)
+				}
 			}
 			toolbarPlaceable.place(0, state.offsetY)
 		}
@@ -169,6 +193,6 @@ private class ScaffoldChildAlignmentModifier(
 	}
 }
 
-data class ScaffoldParentData(
+private data class ScaffoldParentData(
 	var alignment: Alignment? = null
 )
