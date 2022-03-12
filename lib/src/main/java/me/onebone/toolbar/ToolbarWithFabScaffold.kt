@@ -16,7 +16,7 @@ fun ToolbarWithFabScaffold(
 	toolbar: @Composable CollapsingToolbarScope.() -> Unit,
 	fab: @Composable () -> Unit,
 	fabPosition: FabPosition = FabPosition.End,
-	body: @Composable () -> Unit
+	body: @Composable CollapsingToolbarScaffoldScope.() -> Unit
 ) {
 	SubcomposeLayout(
 		modifier = modifier

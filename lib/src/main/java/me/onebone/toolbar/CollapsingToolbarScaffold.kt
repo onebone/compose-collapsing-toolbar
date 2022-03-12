@@ -31,9 +31,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.SaverScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.ParentDataModifier
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import kotlin.math.max
 
 @Stable
@@ -70,6 +75,11 @@ fun rememberCollapsingToolbarScaffoldState(
 	}
 }
 
+interface CollapsingToolbarScaffoldScope {
+	@ExperimentalToolbarApi
+	fun Modifier.align(alignment: Alignment): Modifier
+}
+
 @Composable
 fun CollapsingToolbarScaffold(
 	modifier: Modifier,
@@ -78,7 +88,7 @@ fun CollapsingToolbarScaffold(
 	enabled: Boolean = true,
 	toolbarModifier: Modifier = Modifier,
 	toolbar: @Composable CollapsingToolbarScope.() -> Unit,
-	body: @Composable () -> Unit
+	body: @Composable CollapsingToolbarScaffoldScope.() -> Unit
 ) {
 	val flingBehavior = ScrollableDefaults.flingBehavior()
 
@@ -96,7 +106,8 @@ fun CollapsingToolbarScaffold(
 			) {
 				toolbar()
 			}
-			body()
+
+			CollapsingToolbarScaffoldScopeInstance.body()
 		},
 		modifier = modifier
 			.then(
@@ -107,6 +118,10 @@ fun CollapsingToolbarScaffold(
 				}
 			)
 	) { measurables, constraints ->
+		check(measurables.size >= 2) {
+			"the number of children should be at least 2: toolbar, (at least one) body"
+		}
+
 		val toolbarConstraints = constraints.copy(
 			minWidth = 0,
 			minHeight = 0
@@ -124,8 +139,14 @@ fun CollapsingToolbarScaffold(
 		)
 
 		val toolbarPlaceable = measurables[0].measure(toolbarConstraints)
-		val bodyPlaceables =
-			measurables.drop(1).map { it.measure(bodyConstraints) }
+
+		val bodyMeasurables = measurables.subList(1, measurables.size)
+		val childrenAlignments = bodyMeasurables.mapTo(ArrayList(bodyMeasurables.size)) {
+			(it.parentData as? ScaffoldParentData)?.alignment
+		}
+		val bodyPlaceables = bodyMeasurables.mapTo(ArrayList(bodyMeasurables.size)) {
+			it.measure(bodyConstraints)
+		}
 
 		val toolbarHeight = toolbarPlaceable.height
 
@@ -139,10 +160,39 @@ fun CollapsingToolbarScaffold(
 		).coerceIn(constraints.minHeight, constraints.maxHeight)
 
 		layout(width, height) {
-			bodyPlaceables.forEach {
-				it.place(0, toolbarHeight + state.offsetY)
+			bodyPlaceables.forEachIndexed { index, placeable ->
+				val alignment = childrenAlignments[index]
+
+				if (alignment == null) {
+					placeable.place(0, toolbarHeight + state.offsetY)
+				} else {
+					val offset = alignment.align(
+						size = IntSize(placeable.width, placeable.height),
+						space = IntSize(width, height),
+						layoutDirection = LayoutDirection.Ltr
+					)
+					placeable.place(offset)
+				}
 			}
 			toolbarPlaceable.place(0, state.offsetY)
 		}
 	}
 }
+
+internal object CollapsingToolbarScaffoldScopeInstance: CollapsingToolbarScaffoldScope {
+	@ExperimentalToolbarApi
+	override fun Modifier.align(alignment: Alignment): Modifier =
+		this.then(ScaffoldChildAlignmentModifier(alignment))
+}
+
+private class ScaffoldChildAlignmentModifier(
+	private val alignment: Alignment
+) : ParentDataModifier {
+	override fun Density.modifyParentData(parentData: Any?): Any {
+		return (parentData as? ScaffoldParentData) ?: ScaffoldParentData(alignment)
+	}
+}
+
+private data class ScaffoldParentData(
+	var alignment: Alignment? = null
+)
