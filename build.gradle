@@ -4,7 +4,7 @@ buildscript {
         library_version = '2.3.2'
 
         kotlin_version = '1.6.10'
-        compose_version = '1.1.0'
+        compose_version = '1.1.1'
     }
 
     repositories {
