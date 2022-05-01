@@ -49,7 +49,6 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
@@ -269,15 +268,13 @@ private class CollapsingToolbarMeasurePolicy(
 						val collapsedOffset = collapsed.align(
 							size = IntSize(placeable.width, placeable.height),
 							space = IntSize(maxWidth, height),
-							// TODO LayoutDirection
-							layoutDirection = LayoutDirection.Ltr
+							layoutDirection = layoutDirection
 						)
 
 						val expandedOffset = expanded.align(
 							size = IntSize(placeable.width, placeable.height),
 							space = IntSize(maxWidth, height),
-							// TODO LayoutDirection
-							layoutDirection = LayoutDirection.Ltr
+							layoutDirection = layoutDirection
 						)
 
 						val offset = collapsedOffset + (expandedOffset - collapsedOffset) * progress

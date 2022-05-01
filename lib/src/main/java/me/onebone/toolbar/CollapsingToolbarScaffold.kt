@@ -36,9 +36,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.ParentDataModifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
 import kotlin.math.max
 
 @Stable
@@ -91,6 +91,7 @@ fun CollapsingToolbarScaffold(
 	body: @Composable CollapsingToolbarScaffoldScope.() -> Unit
 ) {
 	val flingBehavior = ScrollableDefaults.flingBehavior()
+	val layoutDirection = LocalLayoutDirection.current
 
 	val nestedScrollConnection = remember(scrollStrategy, state) {
 		scrollStrategy.create(state.offsetYState, state.toolbarState, flingBehavior)
@@ -169,7 +170,7 @@ fun CollapsingToolbarScaffold(
 					val offset = alignment.align(
 						size = IntSize(placeable.width, placeable.height),
 						space = IntSize(width, height),
-						layoutDirection = LayoutDirection.Ltr
+						layoutDirection = layoutDirection
 					)
 					placeable.place(offset)
 				}
