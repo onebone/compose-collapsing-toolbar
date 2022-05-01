@@ -280,11 +280,11 @@ private class CollapsingToolbarMeasurePolicy(
 						placeable.place(offset.x, offset.y)
 					}
 					is CollapsingToolbarParallaxData ->
-						placeable.place(
+						placeable.placeRelative(
 							x = 0,
 							y = -((maxHeight - minHeight) * (1 - progress) * strategy.ratio).roundToInt()
 						)
-					else -> placeable.place(0, 0)
+					else -> placeable.placeRelative(0, 0)
 				}
 			}
 		}

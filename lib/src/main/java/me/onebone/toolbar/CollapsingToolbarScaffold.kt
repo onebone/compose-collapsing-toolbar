@@ -165,7 +165,7 @@ fun CollapsingToolbarScaffold(
 				val alignment = childrenAlignments[index]
 
 				if (alignment == null) {
-					placeable.place(0, toolbarHeight + state.offsetY)
+					placeable.placeRelative(0, toolbarHeight + state.offsetY)
 				} else {
 					val offset = alignment.align(
 						size = IntSize(placeable.width, placeable.height),
@@ -175,7 +175,7 @@ fun CollapsingToolbarScaffold(
 					placeable.place(offset)
 				}
 			}
-			toolbarPlaceable.place(0, state.offsetY)
+			toolbarPlaceable.placeRelative(0, state.offsetY)
 		}
 	}
 }
