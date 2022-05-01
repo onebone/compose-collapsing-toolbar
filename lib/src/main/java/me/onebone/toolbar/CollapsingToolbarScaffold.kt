@@ -142,10 +142,10 @@ fun CollapsingToolbarScaffold(
 		val toolbarPlaceable = measurables[0].measure(toolbarConstraints)
 
 		val bodyMeasurables = measurables.subList(1, measurables.size)
-		val childrenAlignments = bodyMeasurables.mapTo(ArrayList(bodyMeasurables.size)) {
+		val childrenAlignments = bodyMeasurables.map {
 			(it.parentData as? ScaffoldParentData)?.alignment
 		}
-		val bodyPlaceables = bodyMeasurables.mapTo(ArrayList(bodyMeasurables.size)) {
+		val bodyPlaceables = bodyMeasurables.map {
 			it.measure(bodyConstraints)
 		}
 

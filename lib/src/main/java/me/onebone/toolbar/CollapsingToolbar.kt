@@ -222,8 +222,7 @@ private class CollapsingToolbarMeasurePolicy(
 		measurables: List<Measurable>,
 		constraints: Constraints
 	): MeasureResult {
-		val placeables = ArrayList<Placeable>(measurables.size)
-		measurables.mapTo(placeables) {
+		val placeables = measurables.map {
 			it.measure(
 				constraints.copy(
 					minWidth = 0,
@@ -233,8 +232,7 @@ private class CollapsingToolbarMeasurePolicy(
 			)
 		}
 
-		val placeStrategy = ArrayList<Any?>(measurables.size)
-		measurables.mapTo(placeStrategy) { it.parentData }
+		val placeStrategy = measurables.map { it.parentData }
 
 		val minHeight = placeables.minOfOrNull { it.height }
 			?.coerceIn(constraints.minHeight, constraints.maxHeight) ?: 0
