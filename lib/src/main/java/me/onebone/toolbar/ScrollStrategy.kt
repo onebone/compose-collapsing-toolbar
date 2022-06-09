@@ -87,7 +87,10 @@ internal class EnterAlwaysNestedScrollConnection(
 
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val dy = available.y
-		tracker.delta(dy)
+
+		if (source == NestedScrollSource.Drag) {
+			tracker.delta(dy)
+		}
 
 		val toolbar = toolbarState.height.toFloat()
 		val offset = offsetY.value.toFloat()
@@ -138,7 +141,10 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val dy = available.y
-		tracker.delta(dy)
+
+		if (source == NestedScrollSource.Drag) {
+			tracker.delta(dy)
+		}
 
 		val consumed = if(dy > 0) { // expanding: offset -> body -> toolbar
 			val offsetConsumption = dy.coerceAtMost(-offsetY.value.toFloat())
@@ -198,7 +204,10 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val dy = available.y
-		tracker.delta(dy)
+
+		if (source == NestedScrollSource.Drag) {
+			tracker.delta(dy)
+		}
 
 		val consume = if(dy < 0) { // collapsing: toolbar -> body
 			toolbarState.dispatchRawDelta(dy)
