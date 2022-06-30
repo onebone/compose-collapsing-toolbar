@@ -30,23 +30,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Text
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsEqualTo
-import androidx.compose.ui.test.centerX
 import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.height
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.moveBy
-import androidx.compose.ui.test.onAllNodesWithTag
-import androidx.compose.ui.test.onFirst
-import androidx.compose.ui.test.performGesture
-import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.swipe
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.math.abs
@@ -103,7 +93,7 @@ class CollapsingToolbarTest {
 			.assertHeightIsEqualTo(300.dp)
 
 		rule.onNode(hasTestTag("contentList"))
-			.performGesture {
+			.performTouchInput {
 				swipeUp()
 			}
 
