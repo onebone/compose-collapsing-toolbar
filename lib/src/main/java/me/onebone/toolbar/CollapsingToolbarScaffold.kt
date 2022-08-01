@@ -55,13 +55,19 @@ class CollapsingToolbarScaffoldState(
 private class CollapsingToolbarScaffoldStateSaver: Saver<CollapsingToolbarScaffoldState, Bundle> {
 	override fun restore(value: Bundle): CollapsingToolbarScaffoldState =
 		CollapsingToolbarScaffoldState(
-			CollapsingToolbarState(value.getInt("height", Int.MAX_VALUE)),
+			CollapsingToolbarState(
+				initialHeight = value.getInt("height", Int.MAX_VALUE),
+				initialMaxHeight = value.getInt("maxHeight", Int.MAX_VALUE),
+				initialMinHeight = value.getInt("minHeight", 0)
+			),
 			value.getInt("offsetY", 0)
 		)
 
 	override fun SaverScope.save(value: CollapsingToolbarScaffoldState): Bundle =
 		Bundle().apply {
 			putInt("height", value.toolbarState.height)
+			putInt("minHeight", value.toolbarState.minHeight)
+			putInt("maxHeight", value.toolbarState.maxHeight)
 			putInt("offsetY", value.offsetY)
 		}
 }
