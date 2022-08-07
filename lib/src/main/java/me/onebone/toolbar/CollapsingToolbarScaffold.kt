@@ -22,7 +22,6 @@
 
 package me.onebone.toolbar
 
-import android.os.Bundle
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -52,18 +51,18 @@ class CollapsingToolbarScaffoldState(
 	internal val offsetYState = mutableStateOf(initialOffsetY)
 }
 
-private class CollapsingToolbarScaffoldStateSaver: Saver<CollapsingToolbarScaffoldState, Bundle> {
-	override fun restore(value: Bundle): CollapsingToolbarScaffoldState =
+private class CollapsingToolbarScaffoldStateSaver: Saver<CollapsingToolbarScaffoldState, List<Any>> {
+	override fun restore(value: List<Any>): CollapsingToolbarScaffoldState =
 		CollapsingToolbarScaffoldState(
-			CollapsingToolbarState(value.getInt("height", Int.MAX_VALUE)),
-			value.getInt("offsetY", 0)
+			CollapsingToolbarState(value[0] as Int),
+			value[1] as Int
 		)
 
-	override fun SaverScope.save(value: CollapsingToolbarScaffoldState): Bundle =
-		Bundle().apply {
-			putInt("height", value.toolbarState.height)
-			putInt("offsetY", value.offsetY)
-		}
+	override fun SaverScope.save(value: CollapsingToolbarScaffoldState): List<Any> =
+		listOf(
+			value.toolbarState.height,
+			value.offsetY
+	)
 }
 
 @Composable
