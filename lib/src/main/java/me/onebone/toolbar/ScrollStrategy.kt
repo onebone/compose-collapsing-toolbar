@@ -83,14 +83,10 @@ internal class EnterAlwaysNestedScrollConnection(
 	private val flingBehavior: FlingBehavior
 ): NestedScrollConnection {
 	private val scrollDelegate = ScrollDelegate(offsetY)
-	private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
+	//private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
 
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val dy = available.y
-
-		if (source == NestedScrollSource.Drag) {
-			tracker.delta(dy)
-		}
 
 		val toolbar = toolbarState.height.toFloat()
 		val offset = offsetY.value.toFloat()
@@ -116,15 +112,13 @@ internal class EnterAlwaysNestedScrollConnection(
 	}
 
 	override suspend fun onPreFling(available: Velocity): Velocity {
-		val velocity = tracker.reset()
-
-		val left = if(velocity > 0) {
-			toolbarState.fling(flingBehavior, velocity)
+		val left = if(available.y > 0) {
+			toolbarState.fling(flingBehavior, available.y)
 		}else{
 			// If velocity < 0, the main content should have a remaining scroll space
 			// so the scroll resumes to the onPreScroll(..., Fling) phase. Hence we do
 			// not need to process it at onPostFling() manually.
-			velocity
+			available.y
 		}
 
 		return Velocity(x = 0f, y = available.y - left)
@@ -137,14 +131,10 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 	private val flingBehavior: FlingBehavior
 ): NestedScrollConnection {
 	private val scrollDelegate = ScrollDelegate(offsetY)
-	private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
+	//private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
 
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val dy = available.y
-
-		if (source == NestedScrollSource.Drag) {
-			tracker.delta(dy)
-		}
 
 		val consumed = if(dy > 0) { // expanding: offset -> body -> toolbar
 			val offsetConsumption = dy.coerceAtMost(-offsetY.value.toFloat())
@@ -177,9 +167,6 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 		}
 	}
 
-	override suspend fun onPreFling(available: Velocity): Velocity =
-		Velocity(x = 0f, y = tracker.deriveDelta(available.y))
-
 	override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
 		val dy = available.y
 
@@ -200,14 +187,8 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 	private val toolbarState: CollapsingToolbarState,
 	private val flingBehavior: FlingBehavior
 ): NestedScrollConnection {
-	private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
-
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val dy = available.y
-
-		if (source == NestedScrollSource.Drag) {
-			tracker.delta(dy)
-		}
 
 		val consume = if(dy < 0) { // collapsing: toolbar -> body
 			toolbarState.dispatchRawDelta(dy)
@@ -235,12 +216,10 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 	}
 
 	override suspend fun onPreFling(available: Velocity): Velocity {
-		val velocity = tracker.reset()
-
-		val left = if(velocity < 0) {
-			toolbarState.fling(flingBehavior, velocity)
+		val left = if(available.y < 0) {
+			toolbarState.fling(flingBehavior, available.y)
 		}else{
-			velocity
+			available.y
 		}
 
 		return Velocity(x = 0f, y = available.y - left)
