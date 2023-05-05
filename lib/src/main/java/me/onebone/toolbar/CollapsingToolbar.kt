@@ -199,6 +199,7 @@ fun rememberCollapsingToolbarState(
 @Composable
 fun CollapsingToolbar(
 	modifier: Modifier = Modifier,
+	clipToBounds: Boolean = true,
 	collapsingToolbarState: CollapsingToolbarState,
 	content: @Composable CollapsingToolbarScope.() -> Unit
 ) {
@@ -209,8 +210,13 @@ fun CollapsingToolbar(
 	Layout(
 		content = { CollapsingToolbarScopeInstance.content() },
 		measurePolicy = measurePolicy,
-		modifier = modifier
-			.clipToBounds()
+		modifier = modifier.then(
+			if (clipToBounds) {
+				Modifier.clipToBounds()
+			} else {
+				Modifier
+			}
+		)
 	)
 }
 
