@@ -24,8 +24,6 @@ package me.onebone.toolbar
 
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -40,28 +38,22 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import kotlin.math.max
-import kotlin.math.roundToInt
 
 @Deprecated(
 	"Use AppBarContainer for naming consistency",
 	replaceWith = ReplaceWith(
-		"AppBarContainer(modifier, scrollStrategy, collapsingToolbarState, content)",
+		"AppBarContainer(modifier, snapConfig, scrollStrategy, state, content)",
 		"me.onebone.toolbar"
 	)
 )
 @Composable
 fun AppbarContainer(
 	modifier: Modifier = Modifier,
+	snapConfig: SnapConfig? = null,
 	scrollStrategy: ScrollStrategy,
-	collapsingToolbarState: CollapsingToolbarState,
+	state: CollapsingToolbarScaffoldState,
 	content: @Composable AppbarContainerScope.() -> Unit
 ) {
-	AppBarContainer(
-		modifier = modifier,
-		scrollStrategy = scrollStrategy,
-		collapsingToolbarState = collapsingToolbarState,
-		content = content
-	)
 }
 
 @Deprecated(
@@ -74,17 +66,17 @@ fun AppbarContainer(
 @Composable
 fun AppBarContainer(
 	modifier: Modifier = Modifier,
+	snapConfig: SnapConfig? = null,
 	scrollStrategy: ScrollStrategy,
 	/** The state of a connected collapsing toolbar */
-	collapsingToolbarState: CollapsingToolbarState,
+	state: CollapsingToolbarScaffoldState,
 	content: @Composable AppbarContainerScope.() -> Unit
 ) {
-	val offsetY = remember { mutableStateOf(0) }
 	val flingBehavior = ScrollableDefaults.flingBehavior()
 
-	val (scope, measurePolicy) = remember(scrollStrategy, collapsingToolbarState) {
-		AppbarContainerScopeImpl(scrollStrategy.create(offsetY, collapsingToolbarState, flingBehavior)) to
-				AppbarMeasurePolicy(scrollStrategy, collapsingToolbarState, offsetY)
+	val (scope, measurePolicy) = remember(scrollStrategy, state) {
+		AppbarContainerScopeImpl(scrollStrategy.create(state, flingBehavior, snapConfig)) to
+				AppbarMeasurePolicy(scrollStrategy, state)
 	}
 
 	Layout(
@@ -100,7 +92,7 @@ interface AppbarContainerScope {
 
 internal class AppbarContainerScopeImpl(
 	private val nestedScrollConnection: NestedScrollConnection
-): AppbarContainerScope {
+) : AppbarContainerScope {
 	override fun Modifier.appBarBody(): Modifier {
 		return this
 			.then(AppBarBodyMarkerModifier)
@@ -108,7 +100,7 @@ internal class AppbarContainerScopeImpl(
 	}
 }
 
-private object AppBarBodyMarkerModifier: ParentDataModifier {
+private object AppBarBodyMarkerModifier : ParentDataModifier {
 	override fun Density.modifyParentData(parentData: Any?): Any {
 		return AppBarBodyMarker
 	}
@@ -118,9 +110,8 @@ private object AppBarBodyMarker
 
 private class AppbarMeasurePolicy(
 	private val scrollStrategy: ScrollStrategy,
-	private val toolbarState: CollapsingToolbarState,
-	private val offsetY: State<Int>
-): MeasurePolicy {
+	private val state: CollapsingToolbarScaffoldState,
+) : MeasurePolicy {
 	override fun MeasureScope.measure(
 		measurables: List<Measurable>,
 		constraints: Constraints
@@ -132,33 +123,35 @@ private class AppbarMeasurePolicy(
 
 		val nonToolbars = measurables.filter {
 			val data = it.parentData
-			if(data != AppBarBodyMarker) {
-				if(toolbarPlaceable != null)
+			if (data != AppBarBodyMarker) {
+				if (toolbarPlaceable != null)
 					throw IllegalStateException("There cannot exist multiple toolbars under single parent")
 
-				val placeable = it.measure(constraints.copy(
-					minWidth = 0,
-					minHeight = 0
-				))
+				val placeable = it.measure(
+					constraints.copy(
+						minWidth = 0,
+						minHeight = 0
+					)
+				)
 				width = max(width, placeable.width)
 				height = max(height, placeable.height)
 
 				toolbarPlaceable = placeable
 
 				false
-			}else{
+			} else {
 				true
 			}
 		}
 
 		val placeables = nonToolbars.map { measurable ->
-			val childConstraints = if(scrollStrategy == ScrollStrategy.ExitUntilCollapsed) {
+			val childConstraints = if (scrollStrategy == ScrollStrategy.ExitUntilCollapsed) {
 				constraints.copy(
 					minWidth = 0,
 					minHeight = 0,
-					maxHeight = max(0, constraints.maxHeight - toolbarState.minHeight)
+					maxHeight = max(0, constraints.maxHeight - state.toolbarState.minHeight)
 				)
-			}else{
+			} else {
 				constraints.copy(
 					minWidth = 0,
 					minHeight = 0
@@ -179,12 +172,12 @@ private class AppbarMeasurePolicy(
 			width.coerceIn(constraints.minWidth, constraints.maxWidth),
 			height.coerceIn(constraints.minHeight, constraints.maxHeight)
 		) {
-			toolbarPlaceable?.place(x = 0, y = offsetY.value)
+			toolbarPlaceable?.place(x = 0, y = state.offsetY)
 
 			placeables.forEach { placeable ->
 				placeable.place(
 					x = 0,
-					y = offsetY.value + (toolbarPlaceable?.height ?: 0)
+					y = state.offsetY + (toolbarPlaceable?.height ?: 0)
 				)
 			}
 		}

@@ -55,7 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import me.onebone.toolbar.ui.theme.CollapsingToolbarTheme
 
-class ParallaxActivity: ComponentActivity() {
+class ParallaxActivity : ComponentActivity() {
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		setContent {
@@ -79,6 +79,7 @@ fun ParallaxEffect() {
 			modifier = Modifier.fillMaxSize(),
 			state = state,
 			scrollStrategy = ScrollStrategy.EnterAlwaysCollapsed,
+			snapConfig = SnapConfig(),
 			toolbarModifier = Modifier.background(MaterialTheme.colors.primary),
 			enabled = enabled,
 			toolbar = {
@@ -127,7 +128,7 @@ fun ParallaxEffect() {
 				modifier = Modifier
 					.padding(16.dp)
 					.align(Alignment.BottomEnd),
-				onClick = {  }
+				onClick = { }
 			) {
 				Text(text = "Floating Button!")
 			}

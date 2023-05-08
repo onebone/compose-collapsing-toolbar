@@ -25,6 +25,7 @@ package me.onebone.toolbar
 import androidx.annotation.FloatRange
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.animateTo
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.gestures.FlingBehavior
@@ -53,42 +54,43 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
+const val SPRING_BASED_DURATION = -1
+
 @Stable
 class CollapsingToolbarState(
 	initial: Int = Int.MAX_VALUE
-): ScrollableState {
-	/**
-	 * [height] indicates current height of the toolbar.
-	 */
+) : ScrollableState {
+
+	/** [height] indicates current height of the toolbar. */
 	var height: Int by mutableStateOf(initial)
 		private set
 
 	/**
-	 * [minHeight] indicates the minimum height of the collapsing toolbar. The toolbar
-	 * may collapse its height to [minHeight] but not smaller. This size is determined by
-	 * the smallest child.
+	 * [minHeight] indicates the minimum height of the collapsing toolbar. The
+	 * toolbar may collapse its height to [minHeight] but not smaller. This
+	 * size is determined by the smallest child.
 	 */
 	var minHeight: Int
 		get() = minHeightState
 		internal set(value) {
 			minHeightState = value
 
-			if(height < value) {
+			if (height < value) {
 				height = value
 			}
 		}
 
 	/**
-	 * [maxHeight] indicates the maximum height of the collapsing toolbar. The toolbar
-	 * may expand its height to [maxHeight] but not larger. This size is determined by
-	 * the largest child.
+	 * [maxHeight] indicates the maximum height of the collapsing toolbar. The
+	 * toolbar may expand its height to [maxHeight] but not larger. This size
+	 * is determined by the largest child.
 	 */
 	var maxHeight: Int
 		get() = maxHeightState
 		internal set(value) {
 			maxHeightState = value
 
-			if(value < height) {
+			if (value < height) {
 				height = value
 			}
 		}
@@ -99,23 +101,23 @@ class CollapsingToolbarState(
 	val progress: Float
 		@FloatRange(from = 0.0, to = 1.0)
 		get() =
-			if(minHeight == maxHeight) {
+			if (minHeight == maxHeight) {
 				0f
-			}else{
+			} else {
 				((height - minHeight).toFloat() / (maxHeight - minHeight)).coerceIn(0f, 1f)
 			}
 
 	private val scrollableState = ScrollableState { value ->
-		val consume = if(value < 0) {
+		val consume = if (value < 0) {
 			max(minHeight.toFloat() - height, value)
-		}else{
+		} else {
 			min(maxHeight.toFloat() - height, value)
 		}
 
 		val current = consume + deferredConsumption
 		val currentInt = current.toInt()
 
-		if(current.absoluteValue > 0) {
+		if (current.absoluteValue > 0) {
 			height += currentInt
 			deferredConsumption = current - currentInt
 		}
@@ -125,9 +127,7 @@ class CollapsingToolbarState(
 
 	private var deferredConsumption: Float = 0f
 
-	/**
-	 * @return consumed scroll value is returned
-	 */
+	/** @return consumed scroll value is returned */
 	@Deprecated(
 		message = "feedScroll() is deprecated, use dispatchRawDelta() instead.",
 		replaceWith = ReplaceWith("dispatchRawDelta(value)")
@@ -135,12 +135,15 @@ class CollapsingToolbarState(
 	fun feedScroll(value: Float): Float = dispatchRawDelta(value)
 
 	@ExperimentalToolbarApi
-	suspend fun expand(duration: Int = 200) {
+	suspend fun expand(duration: Int = SPRING_BASED_DURATION) {
 		val anim = AnimationState(height.toFloat())
 
 		scroll {
 			var prev = anim.value
-			anim.animateTo(maxHeight.toFloat(), tween(duration)) {
+			anim.animateTo(
+				maxHeight.toFloat(),
+				if (duration == SPRING_BASED_DURATION) spring() else tween(duration)
+			) {
 				scrollBy(value - prev)
 				prev = value
 			}
@@ -148,21 +151,22 @@ class CollapsingToolbarState(
 	}
 
 	@ExperimentalToolbarApi
-	suspend fun collapse(duration: Int = 200) {
+	suspend fun collapse(duration: Int = SPRING_BASED_DURATION) {
 		val anim = AnimationState(height.toFloat())
 
 		scroll {
 			var prev = anim.value
-			anim.animateTo(minHeight.toFloat(), tween(duration)) {
+			anim.animateTo(
+				minHeight.toFloat(),
+				if (duration == SPRING_BASED_DURATION) spring() else tween(duration)
+			) {
 				scrollBy(value - prev)
 				prev = value
 			}
 		}
 	}
 
-	/**
-	 * @return Remaining velocity after fling
-	 */
+	/** @return Remaining velocity after fling */
 	suspend fun fling(flingBehavior: FlingBehavior, velocity: Float): Float {
 		var left = velocity
 		scroll {
@@ -216,7 +220,7 @@ fun CollapsingToolbar(
 
 private class CollapsingToolbarMeasurePolicy(
 	private val collapsingToolbarState: CollapsingToolbarState
-): MeasurePolicy {
+) : MeasurePolicy {
 	override fun MeasureScope.measure(
 		measurables: List<Measurable>,
 		constraints: Constraints
@@ -239,7 +243,7 @@ private class CollapsingToolbarMeasurePolicy(
 		val maxHeight = placeables.maxOfOrNull { it.height }
 			?.coerceIn(constraints.minHeight, constraints.maxHeight) ?: 0
 
-		val maxWidth = placeables.maxOfOrNull{ it.width }
+		val maxWidth = placeables.maxOfOrNull { it.width }
 			?.coerceIn(constraints.minWidth, constraints.maxWidth) ?: 0
 
 		collapsingToolbarState.also {
@@ -253,11 +257,11 @@ private class CollapsingToolbarMeasurePolicy(
 
 			placeables.forEachIndexed { i, placeable ->
 				val strategy = placeStrategy[i]
-				if(strategy is CollapsingToolbarData) {
+				if (strategy is CollapsingToolbarData) {
 					strategy.progressListener?.onProgressUpdate(progress)
 				}
 
-				when(strategy) {
+				when (strategy) {
 					is CollapsingToolbarRoadData -> {
 						val collapsed = strategy.whenCollapsed
 						val expanded = strategy.whenExpanded
@@ -278,11 +282,13 @@ private class CollapsingToolbarMeasurePolicy(
 
 						placeable.place(offset.x, offset.y)
 					}
+
 					is CollapsingToolbarParallaxData ->
 						placeable.placeRelative(
 							x = 0,
 							y = -((maxHeight - minHeight) * (1 - progress) * strategy.ratio).roundToInt()
 						)
+
 					else -> placeable.placeRelative(0, 0)
 				}
 			}
@@ -300,7 +306,7 @@ interface CollapsingToolbarScope {
 	fun Modifier.pin(): Modifier
 }
 
-internal object CollapsingToolbarScopeInstance: CollapsingToolbarScope {
+internal object CollapsingToolbarScopeInstance : CollapsingToolbarScope {
 	override fun Modifier.progress(listener: ProgressListener): Modifier {
 		return this.then(ProgressUpdateListenerModifier(listener))
 	}
@@ -321,7 +327,7 @@ internal object CollapsingToolbarScopeInstance: CollapsingToolbarScope {
 internal class RoadModifier(
 	private val whenCollapsed: Alignment,
 	private val whenExpanded: Alignment
-): ParentDataModifier {
+) : ParentDataModifier {
 	override fun Density.modifyParentData(parentData: Any?): Any {
 		return CollapsingToolbarRoadData(
 			this@RoadModifier.whenCollapsed, this@RoadModifier.whenExpanded,
@@ -332,13 +338,16 @@ internal class RoadModifier(
 
 internal class ParallaxModifier(
 	private val ratio: Float
-): ParentDataModifier {
+) : ParentDataModifier {
 	override fun Density.modifyParentData(parentData: Any?): Any {
-		return CollapsingToolbarParallaxData(ratio, (parentData as? CollapsingToolbarData)?.progressListener)
+		return CollapsingToolbarParallaxData(
+			ratio,
+			(parentData as? CollapsingToolbarData)?.progressListener
+		)
 	}
 }
 
-internal class PinModifier: ParentDataModifier {
+internal class PinModifier : ParentDataModifier {
 	override fun Density.modifyParentData(parentData: Any?): Any {
 		return CollapsingToolbarPinData((parentData as? CollapsingToolbarData)?.progressListener)
 	}
@@ -346,7 +355,7 @@ internal class PinModifier: ParentDataModifier {
 
 internal class ProgressUpdateListenerModifier(
 	private val listener: ProgressListener
-): ParentDataModifier {
+) : ParentDataModifier {
 	override fun Density.modifyParentData(parentData: Any?): Any {
 		return CollapsingToolbarProgressData(listener)
 	}
@@ -362,19 +371,19 @@ internal sealed class CollapsingToolbarData(
 
 internal class CollapsingToolbarProgressData(
 	progressListener: ProgressListener?
-): CollapsingToolbarData(progressListener)
+) : CollapsingToolbarData(progressListener)
 
 internal class CollapsingToolbarRoadData(
 	var whenCollapsed: Alignment,
 	var whenExpanded: Alignment,
 	progressListener: ProgressListener? = null
-): CollapsingToolbarData(progressListener)
+) : CollapsingToolbarData(progressListener)
 
 internal class CollapsingToolbarPinData(
 	progressListener: ProgressListener? = null
-): CollapsingToolbarData(progressListener)
+) : CollapsingToolbarData(progressListener)
 
 internal class CollapsingToolbarParallaxData(
 	var ratio: Float,
 	progressListener: ProgressListener? = null
-): CollapsingToolbarData(progressListener)
+) : CollapsingToolbarData(progressListener)

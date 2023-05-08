@@ -12,6 +12,7 @@ fun ToolbarWithFabScaffold(
 	modifier: Modifier,
 	state: CollapsingToolbarScaffoldState,
 	scrollStrategy: ScrollStrategy,
+	snapConfig: SnapConfig? = null,
 	toolbarModifier: Modifier = Modifier,
 	toolbar: @Composable CollapsingToolbarScope.() -> Unit,
 	fab: @Composable () -> Unit,
@@ -33,6 +34,7 @@ fun ToolbarWithFabScaffold(
 				modifier = modifier,
 				state = state,
 				scrollStrategy = scrollStrategy,
+				snapConfig = snapConfig,
 				toolbarModifier = toolbarModifier,
 				toolbar = toolbar,
 				body = body
