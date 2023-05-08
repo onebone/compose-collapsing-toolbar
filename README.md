@@ -50,6 +50,8 @@ CollapsingToolbarScaffold(
 }
 ```
 
+By default, `CollapsingToolbar` is not scrollable. In order to enable it, set `toolbarScrollable = true` in `CollapsingToolbarScaffold`.
+
 ### CollapsingToolbarScaffoldState
 `CollapsingToolbarScaffoldState` is a holder of the scaffold state, such as the value of y offset and how much the toolbar has expanded. The field is public so you may use it as you need.
 Note that the `CollapsingToolbarScaffoldState` is stable, which means that a change on a value of the state triggers a recomposition.
