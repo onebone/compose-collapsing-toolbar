@@ -32,33 +32,49 @@ import androidx.compose.ui.unit.Velocity
 enum class ScrollStrategy {
 	EnterAlways {
 		override fun create(
-			offsetY: MutableState<Int>,
-			toolbarState: CollapsingToolbarState,
-			flingBehavior: FlingBehavior
-		): NestedScrollConnection =
-			EnterAlwaysNestedScrollConnection(offsetY, toolbarState, flingBehavior)
+			state: CollapsingToolbarScaffoldState,
+			flingBehavior: FlingBehavior,
+			snapConfig: SnapConfig?
+		): NestedScrollConnection = EnterAlwaysNestedScrollConnection(
+			state,
+			flingBehavior,
+			snapConfig
+		).also {
+			state.scrollStrategy = this
+		}
 	},
 	EnterAlwaysCollapsed {
 		override fun create(
-			offsetY: MutableState<Int>,
-			toolbarState: CollapsingToolbarState,
-			flingBehavior: FlingBehavior
-		): NestedScrollConnection =
-			EnterAlwaysCollapsedNestedScrollConnection(offsetY, toolbarState, flingBehavior)
+			state: CollapsingToolbarScaffoldState,
+			flingBehavior: FlingBehavior,
+			snapConfig: SnapConfig?
+		): NestedScrollConnection = EnterAlwaysCollapsedNestedScrollConnection(
+			state,
+			flingBehavior,
+			snapConfig
+		).also {
+			state.scrollStrategy = this
+		}
 	},
 	ExitUntilCollapsed {
 		override fun create(
-			offsetY: MutableState<Int>,
-			toolbarState: CollapsingToolbarState,
-			flingBehavior: FlingBehavior
+			state: CollapsingToolbarScaffoldState,
+			flingBehavior: FlingBehavior,
+			snapConfig: SnapConfig?
 		): NestedScrollConnection =
-			ExitUntilCollapsedNestedScrollConnection(toolbarState, flingBehavior)
+			ExitUntilCollapsedNestedScrollConnection(
+				state,
+				flingBehavior,
+				snapConfig
+			).also {
+				state.scrollStrategy = this
+			}
 	};
 
 	internal abstract fun create(
-		offsetY: MutableState<Int>,
-		toolbarState: CollapsingToolbarState,
-		flingBehavior: FlingBehavior
+		state: CollapsingToolbarScaffoldState,
+		flingBehavior: FlingBehavior,
+		snapConfig: SnapConfig?
 	): NestedScrollConnection
 }
 
@@ -78,32 +94,32 @@ private class ScrollDelegate(
 }
 
 internal class EnterAlwaysNestedScrollConnection(
-	private val offsetY: MutableState<Int>,
-	private val toolbarState: CollapsingToolbarState,
-	private val flingBehavior: FlingBehavior
-): NestedScrollConnection {
-	private val scrollDelegate = ScrollDelegate(offsetY)
-	//private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
+	private val state: CollapsingToolbarScaffoldState,
+	private val flingBehavior: FlingBehavior,
+	private val snapConfig: SnapConfig?
+) : NestedScrollConnection {
+
+	private val scrollDelegate = ScrollDelegate(state.offsetYState)
 
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val dy = available.y
 
-		val toolbar = toolbarState.height.toFloat()
-		val offset = offsetY.value.toFloat()
+		val toolbar = state.toolbarState.height.toFloat()
+		val offset = state.offsetY.toFloat()
 
 		// -toolbarHeight <= offsetY + dy <= 0
-		val consume = if(dy < 0) {
-			val toolbarConsumption = toolbarState.dispatchRawDelta(dy)
+		val consume = if (dy < 0) {
+			val toolbarConsumption = state.toolbarState.dispatchRawDelta(dy)
 			val remaining = dy - toolbarConsumption
 			val offsetConsumption = remaining.coerceAtLeast(-toolbar - offset)
 			scrollDelegate.doScroll(offsetConsumption)
 
 			toolbarConsumption + offsetConsumption
-		}else{
+		} else {
 			val offsetConsumption = dy.coerceAtMost(-offset)
 			scrollDelegate.doScroll(offsetConsumption)
 
-			val toolbarConsumption = toolbarState.dispatchRawDelta(dy - offsetConsumption)
+			val toolbarConsumption = state.toolbarState.dispatchRawDelta(dy - offsetConsumption)
 
 			offsetConsumption + toolbarConsumption
 		}
@@ -112,9 +128,9 @@ internal class EnterAlwaysNestedScrollConnection(
 	}
 
 	override suspend fun onPreFling(available: Velocity): Velocity {
-		val left = if(available.y > 0) {
-			toolbarState.fling(flingBehavior, available.y)
-		}else{
+		val left = if (available.y > 0) {
+			state.toolbarState.fling(flingBehavior, available.y)
+		} else {
 			// If velocity < 0, the main content should have a remaining scroll space
 			// so the scroll resumes to the onPreScroll(..., Fling) phase. Hence we do
 			// not need to process it at onPostFling() manually.
@@ -123,27 +139,37 @@ internal class EnterAlwaysNestedScrollConnection(
 
 		return Velocity(x = 0f, y = available.y - left)
 	}
+
+	override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+		snapConfig?.let {
+			handleToolbarScaffoldSnap(state, it)
+		}
+
+		return super.onPostFling(consumed, available)
+	}
 }
 
 internal class EnterAlwaysCollapsedNestedScrollConnection(
-	private val offsetY: MutableState<Int>,
-	private val toolbarState: CollapsingToolbarState,
-	private val flingBehavior: FlingBehavior
-): NestedScrollConnection {
-	private val scrollDelegate = ScrollDelegate(offsetY)
-	//private val tracker = RelativeVelocityTracker(CurrentTimeProviderImpl())
+	private val state: CollapsingToolbarScaffoldState,
+	private val flingBehavior: FlingBehavior,
+	private val snapConfig: SnapConfig?
+) : NestedScrollConnection {
+
+	private val scrollDelegate = ScrollDelegate(state.offsetYState)
 
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val dy = available.y
 
-		val consumed = if(dy > 0) { // expanding: offset -> body -> toolbar
-			val offsetConsumption = dy.coerceAtMost(-offsetY.value.toFloat())
+		val consumed = if (dy > 0) { // expanding: offset -> body -> toolbar
+			val offsetConsumption = dy.coerceAtMost(-state.offsetY.toFloat())
 			scrollDelegate.doScroll(offsetConsumption)
 
 			offsetConsumption
-		}else{ // collapsing: toolbar -> offset -> body
-			val toolbarConsumption = toolbarState.dispatchRawDelta(dy)
-			val offsetConsumption = (dy - toolbarConsumption).coerceAtLeast(-toolbarState.height.toFloat() - offsetY.value)
+		} else { // collapsing: toolbar -> offset -> body
+			val toolbarConsumption = state.toolbarState.dispatchRawDelta(dy)
+			val offsetConsumption = (dy - toolbarConsumption).coerceAtLeast(
+				-state.toolbarState.height.toFloat() - state.offsetY
+			)
 
 			scrollDelegate.doScroll(offsetConsumption)
 
@@ -160,9 +186,9 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 	): Offset {
 		val dy = available.y
 
-		return if(dy > 0) {
-			Offset(0f, toolbarState.dispatchRawDelta(dy))
-		}else{
+		return if (dy > 0) {
+			Offset(0f, state.toolbarState.dispatchRawDelta(dy))
+		} else {
 			Offset(0f, 0f)
 		}
 	}
@@ -170,12 +196,22 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 	override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
 		val dy = available.y
 
-		val left = if(dy > 0) {
+		val left = if (dy > 0) {
 			// onPostFling() has positive available scroll value only called if the main scroll
 			// has leftover scroll, i.e. the scroll of the main content has done. So we just process
 			// fling if the available value is positive.
-			toolbarState.fling(flingBehavior, dy)
-		}else{
+			state.toolbarState.fling(flingBehavior, dy)
+		} else {
+			snapConfig?.let {
+				val isToolbarScaffoldOffsetSnapping = state.offsetY != 0
+
+				if (isToolbarScaffoldOffsetSnapping) {
+					handleToolbarScaffoldOffsetSnap(state, it)
+				} else {
+					handleToolbarSnap(state.toolbarState, it)
+				}
+			}
+
 			dy
 		}
 
@@ -184,15 +220,16 @@ internal class EnterAlwaysCollapsedNestedScrollConnection(
 }
 
 internal class ExitUntilCollapsedNestedScrollConnection(
-	private val toolbarState: CollapsingToolbarState,
-	private val flingBehavior: FlingBehavior
-): NestedScrollConnection {
+	private val state: CollapsingToolbarScaffoldState,
+	private val flingBehavior: FlingBehavior,
+	private val snapConfig: SnapConfig?
+) : NestedScrollConnection {
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val dy = available.y
 
-		val consume = if(dy < 0) { // collapsing: toolbar -> body
-			toolbarState.dispatchRawDelta(dy)
-		}else{
+		val consume = if (dy < 0) { // collapsing: toolbar -> body
+			state.toolbarState.dispatchRawDelta(dy)
+		} else {
 			0f
 		}
 
@@ -206,9 +243,9 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 	): Offset {
 		val dy = available.y
 
-		val consume = if(dy > 0) { // expanding: body -> toolbar
-			toolbarState.dispatchRawDelta(dy)
-		}else{
+		val consume = if (dy > 0) { // expanding: body -> toolbar
+			state.toolbarState.dispatchRawDelta(dy)
+		} else {
 			0f
 		}
 
@@ -216,9 +253,9 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 	}
 
 	override suspend fun onPreFling(available: Velocity): Velocity {
-		val left = if(available.y < 0) {
-			toolbarState.fling(flingBehavior, available.y)
-		}else{
+		val left = if (available.y < 0) {
+			state.toolbarState.fling(flingBehavior, available.y)
+		} else {
 			available.y
 		}
 
@@ -228,12 +265,54 @@ internal class ExitUntilCollapsedNestedScrollConnection(
 	override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
 		val velocity = available.y
 
-		val left = if(velocity > 0) {
-			toolbarState.fling(flingBehavior, velocity)
-		}else{
+		val left = if (velocity > 0) {
+			state.toolbarState.fling(flingBehavior, velocity)
+		} else {
+			snapConfig?.let {
+				if (state.offsetY <= state.toolbarState.maxHeight) {
+					handleToolbarSnap(state.toolbarState, it)
+				}
+			}
+
 			velocity
 		}
 
 		return Velocity(x = 0f, y = available.y - left)
+	}
+}
+
+@OptIn(ExperimentalToolbarApi::class)
+private suspend fun handleToolbarScaffoldSnap(
+	state: CollapsingToolbarScaffoldState,
+	snapConfig: SnapConfig
+) {
+	if (state.totalProgress <= snapConfig.collapseThreshold) {
+		state.collapse()
+	} else {
+		state.expand()
+	}
+}
+
+@OptIn(ExperimentalToolbarApi::class)
+private suspend fun handleToolbarScaffoldOffsetSnap(
+	state: CollapsingToolbarScaffoldState,
+	snapConfig: SnapConfig
+) {
+	if (state.offsetProgress <= snapConfig.collapseThreshold) {
+		state.offsetCollapse()
+	} else {
+		state.offsetExpand()
+	}
+}
+
+@OptIn(ExperimentalToolbarApi::class)
+private suspend fun handleToolbarSnap(
+	toolbarState: CollapsingToolbarState,
+	snapConfig: SnapConfig
+) {
+	if (toolbarState.progress <= snapConfig.collapseThreshold) {
+		toolbarState.collapse()
+	} else {
+		toolbarState.expand()
 	}
 }

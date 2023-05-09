@@ -59,6 +59,8 @@ Note that the `CollapsingToolbarScaffoldState` is stable, which means that a cha
 val state = rememberCollapsingToolbarScaffoldState()
 val offsetY = state.offsetY // y offset of the layout
 val progress = state.toolbarState.progress // how much the toolbar is expanded (0: collapsed, 1: expanded)
+val offsetProgress = state.offsetProgress // how much the toolbar offset (EnterAlways, EnterAlwaysCollapsed) is expanded (0: collapsed, 1: expanded)
+val totalProgress = state.totalProgress // how much the toolbar height and offset is expanded (0: collapsed, 1: expanded)
 
 Text(
     text = "Hello World",
@@ -67,8 +69,19 @@ Text(
 )
 ```
 
+Also, it is possible to trigger collapse/expansion animations manually:
+```kotlin
+val state = rememberCollapsingToolbarScaffoldState()
+state.toolbarState.expand() // expand toolbar
+state.toolbarState.collapse() // collapse toolbar
+state.offsetExpand() // expand toolbar offset (EnterAlways, EnterAlwaysCollapsed)
+state.offsetCollapse() // collapse toolbar offset (EnterAlways, EnterAlwaysCollapsed)
+state.expand() // expand altogether toolbar and offset
+state.collapse() // collapse altogether toolbar and offset
+```
+
 ## parallax, pin, road
-You can tell children of CollapsingToolbar how to deal with a collapse/expansion. This works almost the same way to the `collapseMode` in the `CollapsingToolbarLayout` except for the `road` modifier.
+You can tell children of `CollapsingToolbar` how to deal with a collapse/expansion. This works almost the same way to the `collapseMode` in the `CollapsingToolbarLayout` except for the `road` modifier.
 
 ```kotlin
 CollapsingToolbar(/* ... */) {
@@ -77,6 +90,8 @@ CollapsingToolbar(/* ... */) {
     )
 }
 ```
+
+To properly set the `minHeight`/`maxHeight` for `CollapsingToolbar` use `Modifier.pin()` on the child, because `CollapsingToolbar` determines its `minHeight`/`maxHeight` by the smallest/largest child.
 
 ### road modifier
 The `road()` modifier allows you to place a child relatively to the toolbar. It receives two arguments: `whenCollapsed` and `whenExpanded`. As the name suggests, these describe how to place a child when the toolbar is collapsed or expanded, respectively.
@@ -101,7 +116,7 @@ The above code orders the title `Text` to be placed at the _CenterStart_ positio
 
 
 ## Scroll Strategy
-`ScrollStrategy` defines how CollapsingToolbar consumes scroll. You can set your desired behavior by providing `scrollStrategy` to `CollapsingToolbarScaffold`:
+`ScrollStrategy` defines how `CollapsingToolbar` consumes scroll. You can set your desired behavior by providing `scrollStrategy` to `CollapsingToolbarScaffold`:
 
 ```kotlin
 CollapsingToolbarScaffold(
@@ -121,3 +136,25 @@ CollapsingToolbarScaffold(
 
 ### ScrollStrategy.ExitUntilCollapsed
 ![ExitUntilCollapsed](img/exit-until-collapsed.gif)
+
+## Snap Config
+`SnapConfig` defines how `CollapsingToolbar` snaps to its edges. You can enable snapping by providing `snapConfig` to `CollapsingToolbarScaffold`:
+
+```kotlin
+CollapsingToolbarScaffold(
+    /* ... */
+    snapConfig = SnapConfig() // "collapseThreshold = 0.5" by default
+) {
+    /* ... */
+}
+```
+
+### Snap for ScrollStrategy.EnterAlways
+![Snap for EnterAlways](img/snap-enter-always.gif)
+
+### Snap for ScrollStrategy.EnterAlwaysCollapsed
+![Snap for EnterAlwaysCollapsed](img/snap-enter-always-collapsed.gif)
+
+### Snap ScrollStrategy.ExitUntilCollapsed
+![Snap for ExitUntilCollapsed](img/snap-exit-until-collapsed.gif)
+
