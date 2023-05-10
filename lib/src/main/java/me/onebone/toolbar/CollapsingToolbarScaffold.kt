@@ -95,6 +95,7 @@ fun CollapsingToolbarScaffold(
 	scrollStrategy: ScrollStrategy,
 	enabled: Boolean = true,
 	toolbarModifier: Modifier = Modifier,
+	toolbarClipToBounds: Boolean = true,
 	toolbarScrollable: Boolean = false,
 	toolbar: @Composable CollapsingToolbarScope.() -> Unit,
 	body: @Composable CollapsingToolbarScaffoldScope.() -> Unit
@@ -113,7 +114,8 @@ fun CollapsingToolbarScaffold(
 		content = {
 			CollapsingToolbar(
 				modifier = toolbarModifier,
-				collapsingToolbarState = toolbarState
+				clipToBounds = toolbarClipToBounds,
+				collapsingToolbarState = toolbarState,
 			) {
 				ToolbarScrollableBox(
 					enabled,

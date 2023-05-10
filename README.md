@@ -50,6 +50,8 @@ CollapsingToolbarScaffold(
 }
 ```
 
+By default, `CollapsingToolbar` clips content to its bounds. In order to disable it, set `toolbarClipToBounds = false` in `CollapsingToolbarScaffold`.
+
 By default, `CollapsingToolbar` is not scrollable. In order to enable it, set `toolbarScrollable = true` in `CollapsingToolbarScaffold`.
 
 ### CollapsingToolbarScaffoldState
