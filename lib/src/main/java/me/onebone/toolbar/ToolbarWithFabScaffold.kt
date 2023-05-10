@@ -14,6 +14,7 @@ fun ToolbarWithFabScaffold(
 	scrollStrategy: ScrollStrategy,
 	toolbarModifier: Modifier = Modifier,
 	toolbarClipToBounds: Boolean = true,
+	toolbarScrollable: Boolean = false,
 	toolbar: @Composable CollapsingToolbarScope.() -> Unit,
 	fab: @Composable () -> Unit,
 	fabPosition: FabPosition = FabPosition.End,
@@ -36,6 +37,7 @@ fun ToolbarWithFabScaffold(
 				scrollStrategy = scrollStrategy,
 				toolbarModifier = toolbarModifier,
 				toolbarClipToBounds = toolbarClipToBounds,
+				toolbarScrollable = toolbarScrollable,
 				toolbar = toolbar,
 				body = body
 			)

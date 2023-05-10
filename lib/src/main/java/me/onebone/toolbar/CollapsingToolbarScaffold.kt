@@ -22,7 +22,13 @@
 
 package me.onebone.toolbar
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.ScrollableDefaults
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
@@ -35,7 +41,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.ParentDataModifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import kotlin.math.max
@@ -51,7 +59,8 @@ class CollapsingToolbarScaffoldState(
 	internal val offsetYState = mutableStateOf(initialOffsetY)
 }
 
-private class CollapsingToolbarScaffoldStateSaver: Saver<CollapsingToolbarScaffoldState, List<Any>> {
+private class CollapsingToolbarScaffoldStateSaver :
+	Saver<CollapsingToolbarScaffoldState, List<Any>> {
 	override fun restore(value: List<Any>): CollapsingToolbarScaffoldState =
 		CollapsingToolbarScaffoldState(
 			CollapsingToolbarState(value[0] as Int),
@@ -62,7 +71,7 @@ private class CollapsingToolbarScaffoldStateSaver: Saver<CollapsingToolbarScaffo
 		listOf(
 			value.toolbarState.height,
 			value.offsetY
-	)
+		)
 }
 
 @Composable
@@ -87,6 +96,7 @@ fun CollapsingToolbarScaffold(
 	enabled: Boolean = true,
 	toolbarModifier: Modifier = Modifier,
 	toolbarClipToBounds: Boolean = true,
+	toolbarScrollable: Boolean = false,
 	toolbar: @Composable CollapsingToolbarScope.() -> Unit,
 	body: @Composable CollapsingToolbarScaffoldScope.() -> Unit
 ) {
@@ -98,6 +108,7 @@ fun CollapsingToolbarScaffold(
 	}
 
 	val toolbarState = state.toolbarState
+	val toolbarScrollState = rememberScrollState()
 
 	Layout(
 		content = {
@@ -106,6 +117,13 @@ fun CollapsingToolbarScaffold(
 				clipToBounds = toolbarClipToBounds,
 				collapsingToolbarState = toolbarState,
 			) {
+				ToolbarScrollableBox(
+					enabled,
+					toolbarScrollable,
+					toolbarState,
+					toolbarScrollState
+				)
+
 				toolbar()
 			}
 
@@ -181,7 +199,26 @@ fun CollapsingToolbarScaffold(
 	}
 }
 
-internal object CollapsingToolbarScaffoldScopeInstance: CollapsingToolbarScaffoldScope {
+@Composable
+private fun ToolbarScrollableBox(
+	enabled: Boolean,
+	toolbarScrollable: Boolean,
+	toolbarState: CollapsingToolbarState,
+	toolbarScrollState: ScrollState
+) {
+	val toolbarScrollableEnabled = enabled && toolbarScrollable
+
+	if (toolbarScrollableEnabled && toolbarState.height != Constraints.Infinity) {
+		Box(
+			modifier = Modifier
+				.fillMaxWidth()
+				.height(with(LocalDensity.current) { toolbarState.height.toDp() })
+				.verticalScroll(state = toolbarScrollState)
+		)
+	}
+}
+
+internal object CollapsingToolbarScaffoldScopeInstance : CollapsingToolbarScaffoldScope {
 	@ExperimentalToolbarApi
 	override fun Modifier.align(alignment: Alignment): Modifier =
 		this.then(ScaffoldChildAlignmentModifier(alignment))
