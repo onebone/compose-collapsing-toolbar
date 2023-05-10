@@ -22,16 +22,26 @@
 
 package me.onebone.toolbar
 
+import android.annotation.SuppressLint
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.ScrollableDefaults
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.SaverScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.ParentDataModifier
@@ -51,7 +61,8 @@ class CollapsingToolbarScaffoldState(
 	internal val offsetYState = mutableStateOf(initialOffsetY)
 }
 
-private class CollapsingToolbarScaffoldStateSaver: Saver<CollapsingToolbarScaffoldState, List<Any>> {
+private class CollapsingToolbarScaffoldStateSaver :
+	Saver<CollapsingToolbarScaffoldState, List<Any>> {
 	override fun restore(value: List<Any>): CollapsingToolbarScaffoldState =
 		CollapsingToolbarScaffoldState(
 			CollapsingToolbarState(value[0] as Int),
@@ -62,7 +73,7 @@ private class CollapsingToolbarScaffoldStateSaver: Saver<CollapsingToolbarScaffo
 		listOf(
 			value.toolbarState.height,
 			value.offsetY
-	)
+		)
 }
 
 @Composable
@@ -85,6 +96,7 @@ fun CollapsingToolbarScaffold(
 	state: CollapsingToolbarScaffoldState,
 	scrollStrategy: ScrollStrategy,
 	enabled: Boolean = true,
+	enabledWhenBodyUnfilled: Boolean = true,
 	toolbarModifier: Modifier = Modifier,
 	toolbarClipToBounds: Boolean = true,
 	toolbar: @Composable CollapsingToolbarScope.() -> Unit,
@@ -98,6 +110,11 @@ fun CollapsingToolbarScaffold(
 	}
 
 	val toolbarState = state.toolbarState
+	val toolbarScrollState = rememberScrollState()
+
+	var isBodyUnfilled by remember { mutableStateOf(true) }
+
+	handleToolbarExpandWhenBodyUnfilled(enabledWhenBodyUnfilled, isBodyUnfilled, toolbarState)
 
 	Layout(
 		content = {
@@ -109,15 +126,18 @@ fun CollapsingToolbarScaffold(
 				toolbar()
 			}
 
+			BodyScrollableBox(
+				enabled = enabled,
+				toolbarScrollState = toolbarScrollState
+			)
 			CollapsingToolbarScaffoldScopeInstance.body()
 		},
 		modifier = modifier
-			.then(
-				if (enabled) {
-					Modifier.nestedScroll(nestedScrollConnection)
-				} else {
-					Modifier
-				}
+			.collapsingToolbarScaffoldNestedScroll(
+				enabled,
+				enabledWhenBodyUnfilled,
+				isBodyUnfilled,
+				nestedScrollConnection
 			)
 	) { measurables, constraints ->
 		check(measurables.size >= 2) {
@@ -141,8 +161,8 @@ fun CollapsingToolbarScaffold(
 		)
 
 		val toolbarPlaceable = measurables[0].measure(toolbarConstraints)
-
-		val bodyMeasurables = measurables.subList(1, measurables.size)
+		val bodyScrollableBoxPlacable = measurables[1].measure(bodyConstraints)
+		val bodyMeasurables = measurables.subList(2, measurables.size)
 		val childrenAlignments = bodyMeasurables.map {
 			(it.parentData as? ScaffoldParentData)?.alignment
 		}
@@ -156,12 +176,17 @@ fun CollapsingToolbarScaffold(
 			toolbarPlaceable.width,
 			bodyPlaceables.maxOfOrNull { it.width } ?: 0
 		).coerceIn(constraints.minWidth, constraints.maxWidth)
+		val bodyChildMaxHeight = bodyPlaceables.maxOfOrNull { it.height } ?: 0
 		val height = max(
 			toolbarHeight,
-			bodyPlaceables.maxOfOrNull { it.height } ?: 0
+			bodyChildMaxHeight
 		).coerceIn(constraints.minHeight, constraints.maxHeight)
+		val bodyMaxHeight = height - toolbarState.maxHeight
+
+		isBodyUnfilled = bodyChildMaxHeight <= bodyMaxHeight
 
 		layout(width, height) {
+			bodyScrollableBoxPlacable.place(0, toolbarHeight + state.offsetY)
 			bodyPlaceables.forEachIndexed { index, placeable ->
 				val alignment = childrenAlignments[index]
 
@@ -181,7 +206,59 @@ fun CollapsingToolbarScaffold(
 	}
 }
 
-internal object CollapsingToolbarScaffoldScopeInstance: CollapsingToolbarScaffoldScope {
+private fun Modifier.collapsingToolbarScaffoldNestedScroll(
+	enabled: Boolean,
+	enabledWhenBodyUnfilled: Boolean,
+	isBodyUnfilled: Boolean,
+	nestedScrollConnection: NestedScrollConnection
+): Modifier = then(
+	if (enabled) {
+		if (enabledWhenBodyUnfilled.not()) {
+			if (isBodyUnfilled) {
+				Modifier
+			} else {
+				Modifier.nestedScroll(nestedScrollConnection)
+			}
+		} else {
+			Modifier.nestedScroll(nestedScrollConnection)
+		}
+	} else {
+		Modifier
+	}
+)
+
+@SuppressLint("ComposableNaming")
+@OptIn(ExperimentalToolbarApi::class)
+@Composable
+private fun handleToolbarExpandWhenBodyUnfilled(
+	enabledWhenBodyUnfilled: Boolean,
+	isBodyUnfilled: Boolean,
+	toolbarState: CollapsingToolbarState
+) {
+	if (enabledWhenBodyUnfilled.not()) {
+		LaunchedEffect(isBodyUnfilled) {
+			if (isBodyUnfilled && toolbarState.progress != 1f) {
+				toolbarState.expand()
+			}
+		}
+	}
+}
+
+@Composable
+private fun BodyScrollableBox(
+	enabled: Boolean,
+	toolbarScrollState: ScrollState
+) {
+	if (enabled) {
+		Box(
+			modifier = Modifier
+				.fillMaxSize()
+				.verticalScroll(state = toolbarScrollState)
+		)
+	}
+}
+
+internal object CollapsingToolbarScaffoldScopeInstance : CollapsingToolbarScaffoldScope {
 	@ExperimentalToolbarApi
 	override fun Modifier.align(alignment: Alignment): Modifier =
 		this.then(ScaffoldChildAlignmentModifier(alignment))

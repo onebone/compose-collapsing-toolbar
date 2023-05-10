@@ -32,25 +32,9 @@ CollapsingToolbarScaffold(
 
 The toolbar will collapse until it gets as small as the smallest child, and will expand as large as the largest child.
 
-Also note that the content should be scrollable for the `CollapsingToolbarScaffold` to consume nested scroll. For `LazyColumn`, you don't have to care of anything because it is scrollable by default. Column, however, is not scrollable by default so you can provide `Modifier.verticalScroll()` to make a content dispatch nested scroll.
-
-```kotlin
-CollapsingToolbarScaffold(
-    state = rememberCollapsingToolbarScaffoldState(), // provide the state of the scaffold
-    toolbar = {
-        // contents of toolbar go here...
-    }
-) {
-    Column(
-        modifier = Modifier
-            .verticalScroll(rememberScrollState()) // main content should be scrollable for CollapsingToolbarScaffold to consume nested scroll
-    ) {
-        // ...
-    }
-}
-```
-
 By default, `CollapsingToolbar` clips content to its bounds. In order to disable it, set `toolbarClipToBounds = false` in `CollapsingToolbarScaffold`.
+
+By default, `CollapsingToolbarScaffold` is scrollable when the body content is unfilled (basically the scrollable body content without `Modifier.fillMaxHeight()`/`Modifier.fillMaxSize()`). In order to disable the scroll only when body content is unfilled, set `enabledWhenBodyUnfilled = false` in `CollapsingToolbarScaffold`. Also note that if the `CollapsingToolbar` is collapsed when the body content becomes unfilled, it will be automatically expanded.
 
 ### CollapsingToolbarScaffoldState
 `CollapsingToolbarScaffoldState` is a holder of the scaffold state, such as the value of y offset and how much the toolbar has expanded. The field is public so you may use it as you need.
