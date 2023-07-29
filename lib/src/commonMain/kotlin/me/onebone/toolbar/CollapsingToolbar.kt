@@ -22,7 +22,6 @@
 
 package me.onebone.toolbar
 
-import androidx.annotation.FloatRange
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.animateTo
 import androidx.compose.animation.core.tween
@@ -97,7 +96,6 @@ class CollapsingToolbarState(
 	private var minHeightState by mutableStateOf(0)
 
 	val progress: Float
-		@FloatRange(from = 0.0, to = 1.0)
 		get() =
 			if(minHeight == maxHeight) {
 				0f
