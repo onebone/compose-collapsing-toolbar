@@ -4,8 +4,10 @@ plugins {
 }
 
 android {
-    compileSdkVersion 33
-    buildToolsVersion "30.0.3"
+    compileSdk = 33
+    buildToolsVersion = "30.0.3"
+
+    namespace = "me.onebone.toolbar"
 
     defaultConfig {
         applicationId "me.onebone.toolbar"
@@ -30,14 +32,8 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    kotlinOptions {
-        jvmTarget = '1.8'
-    }
     buildFeatures {
         compose true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion compose_compiler_version
     }
 }
 
