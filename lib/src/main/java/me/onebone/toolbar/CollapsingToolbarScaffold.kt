@@ -128,6 +128,10 @@ fun CollapsingToolbarScaffold(
 			minWidth = 0,
 			minHeight = 0
 		)
+		// Measuring the toolbar updates toolbarState, which bodyConstraints depends on. Therefore
+		// the toolbar MUST be measured BEFORE bodyConstraints is computed.
+		val toolbarPlaceable = measurables[0].measure(toolbarConstraints)
+
 		val bodyConstraints = constraints.copy(
 			minWidth = 0,
 			minHeight = 0,
@@ -139,9 +143,6 @@ fun CollapsingToolbarScaffold(
 					constraints.maxHeight
 			}
 		)
-
-		val toolbarPlaceable = measurables[0].measure(toolbarConstraints)
-
 		val bodyMeasurables = measurables.subList(1, measurables.size)
 		val childrenAlignments = bodyMeasurables.map {
 			(it.parentData as? ScaffoldParentData)?.alignment
