@@ -86,9 +86,10 @@ class CollapsingToolbarState(
 	var maxHeight: Int
 		get() = maxHeightState
 		internal set(value) {
+			val isExpanded = progress == 1F
 			maxHeightState = value
 
-			if(value < height) {
+			if(value < height || isExpanded) {
 				height = value
 			}
 		}
